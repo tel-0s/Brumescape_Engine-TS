@@ -48,6 +48,8 @@ export class Mod {
             
             // Use original assets for the rest
             const srcDir = Environment.BUILD_SRC_DIR;
+            printInfo(`[${this.config.name}] Using source dir: ${srcDir}`);
+
             const runes = await convertImage(index, `${srcDir}/title`, 'runes');
             const titlebox = await convertImage(index, `${srcDir}/title`, 'titlebox');
             const titlebutton = await convertImage(index, `${srcDir}/title`, 'titlebutton');
@@ -77,7 +79,12 @@ export class Mod {
 
             // title.save() writes to disk, but we want the buffer.
             const buffer = title.encode();
-            this.overrides.set('title', buffer.data);
+            // Copy the data because we are releasing the packet back to the pool
+            const sliced = new Uint8Array(buffer.data.subarray(0, buffer.pos));
+            printInfo(`[${this.config.name}] Title override generated: ${sliced.length} bytes`);
+            
+            this.overrides.set('title', sliced);
+            buffer.release();
             
         } catch (err) {
             printError(`[${this.config.name}] Failed to pack title: ${err}`);

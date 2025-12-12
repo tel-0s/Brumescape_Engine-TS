@@ -55,7 +55,10 @@ export async function generateServerSymbols() {
     if (NpcPack.names.size > 0) {
         npcSymbols = ''; // Reset
         // Sort by ID to ensure correct order
-        const sorted = Array.from(NpcPack.names.entries()).sort((a, b) => a[1] - b[1]);
+        // NpcPack.names is Map<string, number> where string is name, number is ID
+        const entries = Array.from(NpcPack.names.entries());
+        const sorted = entries.sort((a, b) => a[1] - b[1]);
+        
         for (const [name, id] of sorted) {
             npcSymbols += `${id}\t${name}\n`;
         }

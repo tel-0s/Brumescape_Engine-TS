@@ -234,9 +234,15 @@ export async function convertImage(index: Packet, srcPath: string, safeName: str
 
     if (colors.length > 255) {
         // console.log(`[PixPack] Quantizing image (colors: ${colors.length} -> 255)`);
-        img.quantize({ colors: 255 });
+        // Reserve index 0 for transparency, so we can only have 254 visible colors max to fit in a byte (255 total)
+        img.quantize({ colors: 254 });
         colors = generatePalette(img);
         // console.log(`[PixPack] Post-quantization colors: ${colors.length}`);
+    }
+
+    if (colors.length > 255) {
+        console.warn(`[PixPack] Warning: Palette size ${colors.length} exceeds byte limit (255). Truncating palette.`);
+        colors.length = 255;
     }
 
     index.p1(colors.length);

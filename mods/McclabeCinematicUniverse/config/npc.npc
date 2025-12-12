@@ -1,10 +1,18 @@
 [jemery_mcclabe]
 desc=A totally normal human man.
-models=model_1
-heads=model_2
+// Copied from man.npc (dskin_w_ardoungecitizen1)
+model1=model_215_idk
+model2=model_185_obj_wear
+model3=model_249_idk
+model4=model_310_idk
+model5=model_173_npc
+model6=model_176_idk
+model7=model_275_idk
+head1=model_53_idk_head
+head2=model_81_idk_head
 gender=male
-walkanim=seq_1
-readyanim=seq_2
+walkanim=human_walk_f,human_walk_b,human_walk_l,human_walk_r
+readyanim=human_ready
 category=man
 stats=1,1,1,1,1,1
 op1=Talk-to

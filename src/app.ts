@@ -10,10 +10,13 @@ import { printError, printInfo } from '#/util/Logger.js';
 import { updateCompiler } from '#/util/RuneScriptCompiler.js';
 import { createWorker } from '#/util/WorkerFactory.js';
 import { startManagementWeb, startWeb } from '#/web.js';
+import ModManager from '#/mod/ModManager.js';
 
 if (Environment.BUILD_STARTUP_UPDATE) {
     await updateCompiler();
 }
+
+ModManager.init();
 
 if (!fs.existsSync('data/pack/client/config') || !fs.existsSync('data/pack/server/script.dat')) {
     printInfo('Packing cache for the first time, please wait until you see the world is ready.');

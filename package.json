@@ -19,6 +19,7 @@
     "lint:staged": "eslint --no-warn-ignored",
     "logger": "bun run src/logger.ts",
     "login": "bun run src/login.ts",
+    "mod": "bun run tools/mod/CLI.ts",
     "precommit": "prettier . --write && eslint src --fix",
     "prepare": "husky",
     "quickstart": "bun run src/app.ts",

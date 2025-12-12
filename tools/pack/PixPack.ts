@@ -178,6 +178,25 @@ export async function convertImage(index: Packet, srcPath: string, safeName: str
     data.p2(index.pos);
 
     const img = await Jimp.read(`${srcPath}/${safeName}.png`);
+
+    // Handle magic pink transparency (#FF00FF)
+    // Scan the image and convert all #FF00FF pixels to transparent black
+    // This ensures JIMP quantization treats them as transparent/ignore
+    for (let j = 0; j < img.bitmap.width * img.bitmap.height; j++) {
+        const pos = j * 4;
+        const r = img.bitmap.data[pos + 0];
+        const g = img.bitmap.data[pos + 1];
+        const b = img.bitmap.data[pos + 2];
+        
+        if (r === 255 && g === 0 && b === 255) {
+            img.bitmap.data[pos + 3] = 0; // Set Alpha to 0
+            // Optionally set RGB to 0 too to be clean
+            img.bitmap.data[pos + 0] = 0;
+            img.bitmap.data[pos + 1] = 0;
+            img.bitmap.data[pos + 2] = 0;
+        }
+    }
+
     let tileX = img.bitmap.width;
     let tileY = img.bitmap.height;
 

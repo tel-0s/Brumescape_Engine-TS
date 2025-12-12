@@ -127,7 +127,7 @@ export async function packServer() {
         });
     }
 
-    generateServerSymbols();
+    await generateServerSymbols();
 
     if (parentPort) {
         parentPort.postMessage({

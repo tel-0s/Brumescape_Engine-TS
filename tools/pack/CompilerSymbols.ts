@@ -16,7 +16,7 @@ import ScriptOpcodePointers from '#/engine/script/ScriptOpcodePointers.js';
 import Environment from '#/util/Environment.js';
 import { loadDir, loadPack } from '#tools/pack/NameMap.js';
 
-export function generateServerSymbols() {
+export async function generateServerSymbols() {
     fs.mkdirSync('data/symbols', { recursive: true });
 
     const constants: Record<string, string> = {};
@@ -49,6 +49,19 @@ export function generateServerSymbols() {
 
     let npcSymbols = '';
     const npcs = loadPack(`${Environment.BUILD_SRC_DIR}/pack/npc.pack`);
+    // Inject mod NPCs (they were registered in memory but not saved to the pack file)
+    // We need to access NpcPack directly to see the updated list
+    const { NpcPack } = await import('#tools/pack/PackFile.js');
+    if (NpcPack.names.size > npcs.length) {
+        // NpcPack has more names than the file, which means we injected some
+        for (const [name, id] of NpcPack.names.entries()) {
+            if (id >= npcs.length) {
+                // This is a new one
+                npcSymbols += `${id}\t${name}\n`;
+            }
+        }
+    }
+
     for (let i = 0; i < npcs.length; i++) {
         npcSymbols += `${i}\t${npcs[i]}\n`;
     }

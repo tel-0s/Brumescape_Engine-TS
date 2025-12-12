@@ -1,5 +1,3 @@
 [proc,opnpc1_jemery_mcclabe]
-def_string $chat;
-$chat = "My brother Danvid! He's gone! Drowned in olive oil!";
-~chatnpc("<p,neutral><tostring($chat)>");
+~chatnpc("<p,neutral>My brother Danvid! He's gone! Drowned in olive oil!");
 

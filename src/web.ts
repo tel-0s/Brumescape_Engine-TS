@@ -81,19 +81,47 @@ export async function startWeb() {
                 }
                 return new Response(Buffer.from(OnDemand.cache.read(0, 1)!));
             } else if (url.pathname.startsWith('/config')) {
-                return new Response(Buffer.from(OnDemand.cache.read(0, 2)!));
+                const data = OnDemand.cache.read(0, 2);
+                if (!data) {
+                    return new Response(null, { status: 404 });
+                }
+                return new Response(Buffer.from(data));
             } else if (url.pathname.startsWith('/interface')) {
-                return new Response(Buffer.from(OnDemand.cache.read(0, 3)!));
+                const data = OnDemand.cache.read(0, 3);
+                if (!data) {
+                    return new Response(null, { status: 404 });
+                }
+                return new Response(Buffer.from(data));
             } else if (url.pathname.startsWith('/media')) {
-                return new Response(Buffer.from(OnDemand.cache.read(0, 4)!));
+                const data = OnDemand.cache.read(0, 4);
+                if (!data) {
+                    return new Response(null, { status: 404 });
+                }
+                return new Response(Buffer.from(data));
             } else if (url.pathname.startsWith('/versionlist')) {
-                return new Response(Buffer.from(OnDemand.cache.read(0, 5)!));
+                const data = OnDemand.cache.read(0, 5);
+                if (!data) {
+                    return new Response(null, { status: 404 });
+                }
+                return new Response(Buffer.from(data));
             } else if (url.pathname.startsWith('/textures')) {
-                return new Response(Buffer.from(OnDemand.cache.read(0, 6)!));
+                const data = OnDemand.cache.read(0, 6);
+                if (!data) {
+                    return new Response(null, { status: 404 });
+                }
+                return new Response(Buffer.from(data));
             } else if (url.pathname.startsWith('/wordenc')) {
-                return new Response(Buffer.from(OnDemand.cache.read(0, 7)!));
+                const data = OnDemand.cache.read(0, 7);
+                if (!data) {
+                    return new Response(null, { status: 404 });
+                }
+                return new Response(Buffer.from(data));
             } else if (url.pathname.startsWith('/sounds')) {
-                return new Response(Buffer.from(OnDemand.cache.read(0, 8)!));
+                const data = OnDemand.cache.read(0, 8);
+                if (!data) {
+                    return new Response(null, { status: 404 });
+                }
+                return new Response(Buffer.from(data));
             } else if (url.pathname.startsWith('/ondemand.zip')) {
                 return new Response(Bun.file('data/pack/ondemand.zip'));
             } else if (url.pathname.startsWith('/build')) {

@@ -62,6 +62,9 @@ export async function startWeb() {
 
                 return new Response(null, { status: 404 });
             } else if (url.pathname.startsWith('/crc')) {
+                if (ModManager.crcBuffer) {
+                    return new Response(Buffer.from(ModManager.crcBuffer));
+                }
                 return new Response(Buffer.from(CrcBuffer.data));
             } else if (url.pathname.startsWith('/title')) {
                 // Check mod manager for title override

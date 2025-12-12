@@ -6,6 +6,8 @@ import { printInfo, printError } from '#/util/Logger.js';
 import Jagfile from '#/io/Jagfile.js';
 import Packet from '#/io/Packet.js';
 import { convertImage } from '#tools/pack/PixPack.js';
+import { CrcBuffer, makeCrcs } from '#/cache/CrcTable.js';
+import OnDemand from '#/engine/OnDemand.js';
 
 export interface ModConfig {
     name: string;
@@ -73,7 +75,6 @@ export class Mod {
             title.write('p12.dat', p12);
             title.write('q8.dat', q8);
 
-            // Store in overrides
             // title.save() writes to disk, but we want the buffer.
             const buffer = title.encode();
             this.overrides.set('title', buffer.data);
@@ -87,15 +88,19 @@ export class Mod {
 class ModManager {
     mods: Mod[] = [];
     modsDir: string = 'mods';
+    
+    // Cached CRC buffer including mod overrides
+    crcBuffer: Uint8Array | null = null;
 
-    init() {
+    async init() {
         if (!fs.existsSync(this.modsDir)) {
             fs.mkdirSync(this.modsDir);
         }
-        this.loadMods();
+        await this.loadMods();
+        this.recalculateCrcs();
     }
 
-    loadMods() {
+    async loadMods() {
         const entries = fs.readdirSync(this.modsDir, { withFileTypes: true });
         
         for (const entry of entries) {
@@ -107,9 +112,9 @@ class ModManager {
                     try {
                         const config = JSON.parse(fs.readFileSync(configPath, 'utf-8')) as ModConfig;
                         const mod = new Mod(modPath, config);
+                        await mod.load();
                         this.mods.push(mod);
                         printInfo(`Loaded mod: ${config.name} v${config.version}`);
-                        mod.load();
                     } catch (err) {
                         printError(`Failed to load mod at ${modPath}: ${err}`);
                     }
@@ -136,7 +141,39 @@ class ModManager {
         }
         return null;
     }
+
+    recalculateCrcs() {
+        // Rebuild CrcBuffer based on overrides
+        // See CrcTable.ts for original logic
+        
+        const buffer = Packet.alloc(4 * 9);
+        const count = OnDemand.cache.count(0);
+        
+        for (let i = 0; i < count; i++) {
+            let data: Uint8Array | null = null;
+            
+            // Check overrides logic
+            if (i === 1) { // Title is index 1
+                 data = this.getNamedOverride('title');
+            }
+
+            // Fallback to cache
+            if (!data) {
+                data = OnDemand.cache.read(0, i);
+            }
+
+            if (data) {
+                buffer.p4(Packet.getcrc(data, 0, data.length));
+            } else {
+                buffer.p4(0);
+            }
+        }
+        
+        this.crcBuffer = buffer.data;
+        
+        // Also update the global CrcBuffer if possible or provide access to this one
+        // Ideally we replace the global one or ensure web.ts uses this one.
+    }
 }
 
 export default new ModManager();
-

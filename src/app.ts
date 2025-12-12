@@ -16,7 +16,7 @@ if (Environment.BUILD_STARTUP_UPDATE) {
     await updateCompiler();
 }
 
-ModManager.init();
+await ModManager.init();
 
 if (!fs.existsSync('data/pack/client/config') || !fs.existsSync('data/pack/server/script.dat')) {
     printInfo('Packing cache for the first time, please wait until you see the world is ready.');

@@ -151,11 +151,13 @@ class ModManager {
     }
 
     recalculateCrcs() {
+        // printInfo('Recalculating CRCs...');
         // Rebuild CrcBuffer based on overrides
         // See CrcTable.ts for original logic
         
         const buffer = Packet.alloc(4 * 9);
         const count = OnDemand.cache.count(0);
+        // printInfo(`Cache count for archive 0: ${count}`);
         
         for (let i = 0; i < count; i++) {
             let data: Uint8Array | null = null;
@@ -163,6 +165,11 @@ class ModManager {
             // Check overrides logic
             if (i === 1) { // Title is index 1
                  data = this.getNamedOverride('title');
+                 if (data) {
+                     // printInfo('Using title override for CRC calculation');
+                 } else {
+                     // printInfo('No title override found during CRC calculation');
+                 }
             }
 
             // Fallback to cache
@@ -178,6 +185,7 @@ class ModManager {
         }
         
         this.crcBuffer = buffer.data;
+        // printInfo('CRC buffer updated.');
         
         // Also update the global CrcBuffer if possible or provide access to this one
         // Ideally we replace the global one or ensure web.ts uses this one.

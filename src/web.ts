@@ -82,6 +82,7 @@ export async function startWeb() {
                 // Check mod manager for title override
                 const override = ModManager.getNamedOverride('title');
                 if (override) {
+                    // console.log(`[Web] Serving custom title (${override.length} bytes)`);
                     // Send with no-cache to ensure updates are seen
                     return new Response(override, {
                         headers: {

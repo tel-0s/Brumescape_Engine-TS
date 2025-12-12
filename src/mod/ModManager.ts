@@ -6,6 +6,7 @@ import { printInfo, printError } from '#/util/Logger.js';
 import Jagfile from '#/io/Jagfile.js';
 import Packet from '#/io/Packet.js';
 import { convertImage } from '#tools/pack/PixPack.js';
+import { NpcPack } from '#tools/pack/PackFile.js';
 import OnDemand from '#/engine/OnDemand.js';
 import NpcType from '#/cache/config/NpcType.js';
 import { packNpcConfigs, parseNpcConfig } from '#tools/pack/config/NpcConfig.js';
@@ -270,7 +271,15 @@ class ModManager {
 
                 if (debugname !== null) {
                     configs.set(debugname, config);
-                    printInfo(`[ModManager] Injected NPC: ${debugname}`);
+                    
+                    // Register with NpcPack so it gets an ID and is included in the packing iteration
+                    if (!NpcPack.names.has(debugname)) {
+                        const id = NpcPack.max++;
+                        NpcPack.register(id, debugname);
+                        printInfo(`[ModManager] Registered NPC: ${debugname} (ID: ${id})`);
+                    }
+                    
+                    // printInfo(`[ModManager] Injected NPC: ${debugname}`);
                 }
             } else {
                 printError(`[ModManager] NPC config file not found: ${npcConfigPath}`);

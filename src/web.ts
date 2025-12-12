@@ -11,6 +11,7 @@ import NullClientSocket from '#/server/NullClientSocket.js';
 import WSClientSocket from '#/server/ws/WSClientSocket.js';
 import Environment from '#/util/Environment.js';
 import OnDemand from '#/engine/OnDemand.js';
+import ModManager from '#/mod/ModManager.js';
 import { tryParseInt } from '#/util/TryParse.js';
 import { getPublicPerDeploymentToken } from '#/io/PemUtil.js';
 
@@ -63,6 +64,11 @@ export async function startWeb() {
             } else if (url.pathname.startsWith('/crc')) {
                 return new Response(Buffer.from(CrcBuffer.data));
             } else if (url.pathname.startsWith('/title')) {
+                // Check mod manager for title override
+                const override = ModManager.getNamedOverride('title');
+                if (override) {
+                    return new Response(override);
+                }
                 return new Response(Buffer.from(OnDemand.cache.read(0, 1)!));
             } else if (url.pathname.startsWith('/config')) {
                 return new Response(Buffer.from(OnDemand.cache.read(0, 2)!));

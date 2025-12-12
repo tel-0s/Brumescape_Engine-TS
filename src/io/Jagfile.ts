@@ -181,6 +181,12 @@ export default class Jagfile {
     }
 
     save(path: string): void {
+        const jag = this.encode();
+        jag.save(path);
+        jag.release();
+    }
+
+    encode(): Packet {
         let buf: Packet = Packet.alloc(5);
 
         for (let i: number = 0; i < this.fileQueue.length; i++) {
@@ -262,8 +268,7 @@ export default class Jagfile {
             buf.release();
         }
 
-        jag.save(path);
-        jag.release();
+        return jag;
     }
 }
 

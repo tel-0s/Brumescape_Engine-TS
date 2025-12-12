@@ -3,6 +3,9 @@ import path from 'path';
 
 import Environment from '#/util/Environment.js';
 import { printInfo, printError } from '#/util/Logger.js';
+import Jagfile from '#/io/Jagfile.js';
+import Packet from '#/io/Packet.js';
+import { convertImage } from '#tools/pack/PixPack.js';
 
 export interface ModConfig {
     name: string;
@@ -26,8 +29,58 @@ export class Mod {
     }
 
     async load() {
-        // Implementation for loading assets would go here
-        // For now we just acknowledge existence
+        // Check for title override
+        if (fs.existsSync(path.join(this.path, 'sprites/logo.png'))) {
+            await this.packTitle();
+        }
+    }
+
+    async packTitle() {
+        try {
+            printInfo(`[${this.config.name}] Packing custom title screen...`);
+            
+            const index = Packet.alloc(3);
+            
+            // Use mod logo
+            const logo = await convertImage(index, path.join(this.path, 'sprites'), 'logo');
+            
+            // Use original assets for the rest
+            const srcDir = Environment.BUILD_SRC_DIR;
+            const runes = await convertImage(index, `${srcDir}/title`, 'runes');
+            const titlebox = await convertImage(index, `${srcDir}/title`, 'titlebox');
+            const titlebutton = await convertImage(index, `${srcDir}/title`, 'titlebutton');
+
+            const b12 = await convertImage(index, `${srcDir}/fonts`, 'b12');
+            const p11 = await convertImage(index, `${srcDir}/fonts`, 'p11');
+            const p12 = await convertImage(index, `${srcDir}/fonts`, 'p12');
+            const q8 = await convertImage(index, `${srcDir}/fonts`, 'q8');
+
+            const title = Jagfile.new();
+            // Assuming we keep the original background or allow overriding it too
+            if (fs.existsSync(path.join(this.path, 'binary/title.jpg'))) {
+                 title.write('title.dat', Packet.load(path.join(this.path, 'binary/title.jpg'), true));
+            } else {
+                 title.write('title.dat', Packet.load(`${srcDir}/binary/title.jpg`, true));
+            }
+
+            title.write('index.dat', index);
+            title.write('logo.dat', logo);
+            title.write('runes.dat', runes);
+            title.write('titlebox.dat', titlebox);
+            title.write('titlebutton.dat', titlebutton);
+            title.write('b12.dat', b12);
+            title.write('p11.dat', p11);
+            title.write('p12.dat', p12);
+            title.write('q8.dat', q8);
+
+            // Store in overrides
+            // title.save() writes to disk, but we want the buffer.
+            const buffer = title.encode();
+            this.overrides.set('title', buffer.data);
+            
+        } catch (err) {
+            printError(`[${this.config.name}] Failed to pack title: ${err}`);
+        }
     }
 }
 
@@ -66,11 +119,22 @@ class ModManager {
     }
 
     getOverride(archive: number, file: number): Uint8Array | null {
-        // Check all mods for an override
-        // In a real implementation, we'd need a more efficient lookup 
-        // and a way to map IDs to filenames to check if the mod has the file.
-        // For now, this is a placeholder hook.
+        // Check for specific archive/file overrides if we implement them
+        // For title (archive 0, file 1 in build script, but accessed via web usually)
+        if (archive === 1 && file === 1) {
+             const title = this.getNamedOverride('title');
+             if (title) return title;
+        }
         return null; 
+    }
+
+    getNamedOverride(name: string): Uint8Array | null {
+        for (const mod of this.mods) {
+            if (mod.overrides.has(name)) {
+                return mod.overrides.get(name)!;
+            }
+        }
+        return null;
     }
 }
 

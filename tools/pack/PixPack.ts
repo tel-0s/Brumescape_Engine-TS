@@ -191,9 +191,9 @@ export async function convertImage(index: Packet, srcPath: string, safeName: str
         // Euclidean distance squared from (255, 0, 255)
         const dist = (r - 255) ** 2 + (g - 0) ** 2 + (b - 255) ** 2;
 
-        // Threshold of ~64 (4096 squared) handles blending artifacts 
-        // while preserving the logo's actual colors (assuming no bright magenta in logo)
-        if (dist < 4096) {
+        // Increased threshold to be more aggressive against pink fringing
+        // 10000 covers a wider range of magenta-ish pixels
+        if (dist < 10000) {
             img.bitmap.data[pos + 3] = 0; // Set Alpha to 0
             img.bitmap.data[pos + 0] = 0;
             img.bitmap.data[pos + 1] = 0;

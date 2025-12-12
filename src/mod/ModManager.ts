@@ -88,6 +88,7 @@ export class Mod {
             
         } catch (err) {
             printError(`[${this.config.name}] Failed to pack title: ${err}`);
+            console.error(err); // Ensure we see the full error stack
         }
     }
 }

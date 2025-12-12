@@ -26,6 +26,8 @@ import Packet from '#/io/Packet.js';
 import ModManager from '#/mod/ModManager.js';
 
 export async function packClient(modelFlags: number[]) {
+    await injectModScripts();
+
     if (parentPort) {
         parentPort.postMessage({
             type: 'dev_progress',
@@ -81,25 +83,16 @@ export async function packClient(modelFlags: number[]) {
         });
     }
 }
-export async function packServer() {
+
+async function injectModScripts() {
     // Inject mod scripts into the build list
-    // This is a bit tricky as the compiler expects files in a specific directory structure
-    // We might need to copy them temporarily or modify the compiler invocation (which is a jar)
-    
-    // For now, let's copy mod scripts to a temp dir in scripts/
     const modScriptDir = `${Environment.BUILD_SRC_DIR}/scripts/_mods`;
     if (fs.existsSync(modScriptDir)) {
         fs.rmSync(modScriptDir, { recursive: true, force: true });
     }
     
-    // We need ModManager initialized to know about mods
-    // It should be init'd by app.ts calling packServer, but let's be safe
-    // Actually ModManager is a singleton, so if it was init'd in this process it's fine.
-    // But packServer runs in a worker or separate process often?
-    // If run via 'bun run build', ModManager isn't init'd.
     await ModManager.init();
 
-    let hasModScripts = false;
     for (const mod of ModManager.mods) {
         if (mod.scriptPath) {
             if (!fs.existsSync(modScriptDir)) {
@@ -110,12 +103,13 @@ export async function packServer() {
             for (const file of files) {
                 if (file.endsWith('.rs2')) {
                     fs.copyFileSync(path.join(mod.scriptPath, file), path.join(modScriptDir, file));
-                    hasModScripts = true;
                 }
             }
         }
     }
+}
 
+export async function packServer() {
     if (!fs.existsSync('RuneScriptCompiler.jar')) {
         throw new Error('The RuneScript compiler is missing and the build process cannot continue.');
     }

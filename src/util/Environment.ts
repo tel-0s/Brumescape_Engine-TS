@@ -3,14 +3,6 @@ import 'dotenv/config';
 import { tryParseBoolean, tryParseInt, tryParseString } from '#/util/TryParse.js';
 import { WalkTriggerSetting } from '#/engine/entity/WalkTriggerSetting.js';
 
-// Auto-detect content path
-let contentPath = '../content';
-if (fs.existsSync('../Brumescape_Content')) {
-    contentPath = '../Brumescape_Content';
-} else if (fs.existsSync('../../Brumescape_Content')) {
-    contentPath = '../../Brumescape_Content';
-}
-
 export default {
     EASY_STARTUP: tryParseBoolean(process.env.EASY_STARTUP, false),
     WEBSITE_REGISTRATION: tryParseBoolean(process.env.WEBSITE_REGISTRATION, true),
@@ -115,5 +107,5 @@ export default {
     // used for unpacking/custom development
     BUILD_VERIFY_PACK: tryParseBoolean(process.env.BUILD_VERIFY_PACK, true),
     // used for unpacking/custom development
-    BUILD_SRC_DIR: tryParseString(process.env.BUILD_SRC_DIR, contentPath)
+    BUILD_SRC_DIR: tryParseString(process.env.BUILD_SRC_DIR, '../content')
 };

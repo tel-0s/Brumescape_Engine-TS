@@ -105,7 +105,7 @@ class ModManager {
             fs.mkdirSync(this.modsDir);
         }
         await this.loadMods();
-        this.recalculateCrcs();
+        await this.recalculateCrcs();
     }
 
     async loadMods() {
@@ -150,7 +150,7 @@ class ModManager {
         return null;
     }
 
-    recalculateCrcs() {
+    async recalculateCrcs() {
         // printInfo('Recalculating CRCs...');
         // Rebuild CrcBuffer based on overrides
         // See CrcTable.ts for original logic
@@ -188,26 +188,7 @@ class ModManager {
         // printInfo('CRC buffer updated.');
         
         // Also update the global CrcBuffer if possible or provide access to this one
-        // Update global CrcTable/Buffer for Login Server check (World.ts imports these)
-        // We need to overwrite the CrcBuffer32 value which is used in World.ts login check
-        
-        const { CrcBuffer: GlobalCrcBuffer, CrcTable: GlobalCrcTable } = await import('#/cache/CrcTable.js');
-        
-        // Update the buffer content
-        GlobalCrcBuffer.data.set(buffer.data);
-        GlobalCrcBuffer.pos = 0; // Reset pos if needed, though usually just data is read
-        
-        // Update the 32-bit CRC hash of the buffer itself, which is what the login server checks
-        // Note: We need to update the exported variable. Since it's a let/const export, we might not be able to 
-        // update the binding directly if it's not a mutable export or if we can't access the setter.
-        // However, looking at CrcTable.ts, CrcBuffer32 is 'export let'.
-        
-        // We can't re-assign an imported 'let' directly in ESM.
-        // But we can call a function in CrcTable.ts if one existed to update it.
-        // Since we can't modify CrcTable.ts easily to add a setter without potentially breaking things or restarting,
-        // we might be stuck unless we patch World.ts to use ModManager's CRC.
-        
-        // Actually, let's patch World.ts to use ModManager.crcBuffer for the check if available.
+        // Ideally we replace the global one or ensure web.ts uses this one.
     }
 }
 

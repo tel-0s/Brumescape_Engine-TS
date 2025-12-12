@@ -180,7 +180,6 @@ export async function convertImage(index: Packet, srcPath: string, safeName: str
     const img = await Jimp.read(`${srcPath}/${safeName}.png`);
     let tileX = img.bitmap.width;
     let tileY = img.bitmap.height;
-    let tileY = img.bitmap.height;
 
     const sprites: Sprite[] = [];
     const hasMeta = fs.existsSync(`${srcPath}/meta/${safeName}.opt`);

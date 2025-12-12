@@ -230,6 +230,7 @@ class ModManager {
                     if (line.startsWith('[')) {
                         if (debugname !== null) {
                             configs.set(debugname, config);
+                            printInfo(`[ModManager] Injected NPC: ${debugname}`);
                         }
                         
                         debugname = line.substring(1, line.length - 1);

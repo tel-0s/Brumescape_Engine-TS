@@ -136,6 +136,7 @@ class ModManager {
     }
 
     async loadMods() {
+        if (!fs.existsSync(this.modsDir)) return;
         const entries = fs.readdirSync(this.modsDir, { withFileTypes: true });
         
         for (const entry of entries) {
@@ -216,7 +217,13 @@ class ModManager {
     }
 
     // Hook into NPC packing to inject mod configs
-    injectNpcs(configs: Map<string, ConfigLine[]>) {
+    async injectNpcs(configs: Map<string, ConfigLine[]>) {
+        if (this.mods.length === 0) {
+            // Need to ensure mods are loaded if injectNpcs is called before init
+            if (!fs.existsSync(this.modsDir)) return;
+            await this.loadMods();
+        }
+
         for (const mod of this.mods) {
             if (!mod.hasNpcOverrides) continue;
 

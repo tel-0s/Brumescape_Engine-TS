@@ -153,6 +153,12 @@ export async function convertImage(index: Packet, srcPath: string, safeName: str
     data.p2(index.pos);
 
     const img = await Jimp.read(`${srcPath}/${safeName}.png`);
+    
+    if (safeName === 'logo') {
+        // Debug logging for logo dimensions
+        console.log(`[PixPack] Packing logo: ${img.bitmap.width}x${img.bitmap.height}`);
+    }
+
     let tileX = img.bitmap.width;
     let tileY = img.bitmap.height;
 

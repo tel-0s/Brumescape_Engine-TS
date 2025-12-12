@@ -1,5 +1,5 @@
 [proc,opnpc1_jemery_mcclabe]
-def_string $chat
-$chat = "My cousin Danvid! He's gone! Drowned in olive oil!";
+def_string $chat;
+$chat = "My brother Danvid! He's gone! Drowned in olive oil!";
 npc_speak($chat);
 

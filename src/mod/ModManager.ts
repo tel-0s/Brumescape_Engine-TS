@@ -63,9 +63,16 @@ export class Mod {
             // Use mod logo
             const logo = await convertImage(index, path.join(this.path, 'sprites'), 'logo');
             
-            // Use original assets for the rest
-            const srcDir = Environment.BUILD_SRC_DIR;
-            // printInfo(`[${this.config.name}] Using source dir: ${srcDir}`);
+            // Fallback for build script environment
+            let srcDir = Environment.BUILD_SRC_DIR;
+            if (!fs.existsSync(srcDir)) {
+                // If running from Brumescape_Engine-TS root, and content is sibling
+                if (fs.existsSync('../Brumescape_Content')) {
+                    srcDir = '../Brumescape_Content';
+                } else if (fs.existsSync('../content')) {
+                    srcDir = '../content';
+                }
+            }
 
             const runes = await convertImage(index, `${srcDir}/title`, 'runes');
             const titlebox = await convertImage(index, `${srcDir}/title`, 'titlebox');
@@ -214,6 +221,8 @@ class ModManager {
             if (!mod.hasNpcOverrides) continue;
 
             const npcConfigPath = path.join(mod.path, 'config/npc.npc');
+            console.log(`[ModManager] Checking for NPC config at: ${npcConfigPath}`);
+            
             if (fs.existsSync(npcConfigPath)) {
                 // Read and parse the mod's NPC config
                 // This logic mirrors readConfigs in PackShared.ts but simplifies for injection
@@ -256,6 +265,8 @@ class ModManager {
                     configs.set(debugname, config);
                     printInfo(`[ModManager] Injected NPC: ${debugname}`);
                 }
+            } else {
+                printError(`[ModManager] NPC config file not found: ${npcConfigPath}`);
             }
         }
     }

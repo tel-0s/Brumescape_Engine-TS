@@ -78,6 +78,7 @@ export function writeImage(img: { bitmap: Bitmap }, data: Packet, index: Packet,
                 index = colors.indexOf(rgb);
                 if (index === -1) {
                     index = 0; // Fallback to transparent if color not found (shouldn't happen)
+                    // console.log(`[PixPack] Warning: Pixel not found in palette: ${rgb.toString(16)}`);
                 }
             }
 
@@ -214,8 +215,10 @@ export async function convertImage(index: Packet, srcPath: string, safeName: str
     }
 
     if (colors.length > 255) {
+        console.log(`[PixPack] Quantizing image (colors: ${colors.length} -> 255)`);
         img.quantize({ colors: 255 });
         colors = generatePalette(img);
+        console.log(`[PixPack] Post-quantization colors: ${colors.length}`);
     }
 
     index.p1(colors.length);

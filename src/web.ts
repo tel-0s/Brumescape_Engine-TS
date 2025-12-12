@@ -63,9 +63,21 @@ export async function startWeb() {
                 return new Response(null, { status: 404 });
             } else if (url.pathname.startsWith('/crc')) {
                 if (ModManager.crcBuffer) {
-                    return new Response(Buffer.from(ModManager.crcBuffer));
+                    return new Response(Buffer.from(ModManager.crcBuffer), {
+                        headers: {
+                            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                            'Pragma': 'no-cache',
+                            'Expires': '0',
+                        }
+                    });
                 }
-                return new Response(Buffer.from(CrcBuffer.data));
+                return new Response(Buffer.from(CrcBuffer.data), {
+                        headers: {
+                            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                            'Pragma': 'no-cache',
+                            'Expires': '0',
+                        }
+                    });
             } else if (url.pathname.startsWith('/title')) {
                 // Check mod manager for title override
                 const override = ModManager.getNamedOverride('title');

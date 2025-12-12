@@ -138,6 +138,8 @@ export type ConfigPackCallback = (configs: Map<string, ConfigLine[]>, modelFlags
 export type ConfigSaveCallback = (dat: Packet, idx: Packet) => void;
 export type ConfigValidateCallback = (server: Packet, client: Packet) => boolean;
 
+import ModManager from '#/mod/ModManager.js';
+
 export async function readConfigs(dirTree: Set<string>, extension: string, requiredProperties: string[], modelFlags: number[], parse: ConfigParseCallback, pack: ConfigPackCallback, saveClient: ConfigSaveCallback, saveServer: ConfigSaveCallback, validate?: ConfigValidateCallback) {
     const files = findFiles(dirTree, extension);
 
@@ -244,6 +246,11 @@ export async function readConfigs(dirTree: Set<string>, extension: string, requi
 
             configs.set(debugname, config);
         }
+    }
+
+    // Inject mod configs if applicable
+    if (extension === '.npc') {
+        ModManager.injectNpcs(configs);
     }
 
     const { client, server } = pack(configs, modelFlags);

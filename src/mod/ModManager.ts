@@ -6,8 +6,10 @@ import { printInfo, printError } from '#/util/Logger.js';
 import Jagfile from '#/io/Jagfile.js';
 import Packet from '#/io/Packet.js';
 import { convertImage } from '#tools/pack/PixPack.js';
-import { CrcBuffer, makeCrcs } from '#/cache/CrcTable.js';
 import OnDemand from '#/engine/OnDemand.js';
+import NpcType from '#/cache/config/NpcType.js';
+import { packNpcConfigs, parseNpcConfig } from '#tools/pack/config/NpcConfig.js';
+import { ConfigLine } from '#tools/pack/config/PackShared.js';
 
 export interface ModConfig {
     name: string;
@@ -35,11 +37,26 @@ export class Mod {
         if (fs.existsSync(path.join(this.path, 'sprites/logo.png'))) {
             await this.packTitle();
         }
+
+        // Check for NPC overrides
+        if (fs.existsSync(path.join(this.path, 'config/npc.npc'))) {
+            this.hasNpcOverrides = true;
+        }
+
+        // Check for scripts
+        const scriptDir = path.join(this.path, 'scripts');
+        if (fs.existsSync(scriptDir)) {
+            // We need to tell the system to include these scripts
+            this.scriptPath = scriptDir;
+        }
     }
+
+    hasNpcOverrides = false;
+    scriptPath: string | null = null;
 
     async packTitle() {
         try {
-            printInfo(`[${this.config.name}] Packing custom title screen...`);
+            // printInfo(`[${this.config.name}] Packing custom title screen...`);
             
             const index = Packet.alloc(3);
             
@@ -48,7 +65,7 @@ export class Mod {
             
             // Use original assets for the rest
             const srcDir = Environment.BUILD_SRC_DIR;
-            printInfo(`[${this.config.name}] Using source dir: ${srcDir}`);
+            // printInfo(`[${this.config.name}] Using source dir: ${srcDir}`);
 
             const runes = await convertImage(index, `${srcDir}/title`, 'runes');
             const titlebox = await convertImage(index, `${srcDir}/title`, 'titlebox');
@@ -79,9 +96,12 @@ export class Mod {
 
             // title.save() writes to disk, but we want the buffer.
             const buffer = title.encode();
-            // Copy the data because we are releasing the packet back to the pool
+            
+            // Create a completely new Uint8Array copy to detach from the packet's internal buffer
+            // which gets reused/released
             const data = new Uint8Array(buffer.data.subarray(0, buffer.pos));
-            printInfo(`[${this.config.name}] Title override generated: ${data.length} bytes`);
+            
+            // printInfo(`[${this.config.name}] Title override generated: ${data.length} bytes`);
             
             this.overrides.set('title', data);
             buffer.release();
@@ -105,7 +125,7 @@ class ModManager {
             fs.mkdirSync(this.modsDir);
         }
         await this.loadMods();
-        await this.recalculateCrcs();
+        this.recalculateCrcs();
     }
 
     async loadMods() {
@@ -150,7 +170,7 @@ class ModManager {
         return null;
     }
 
-    async recalculateCrcs() {
+    recalculateCrcs() {
         // printInfo('Recalculating CRCs...');
         // Rebuild CrcBuffer based on overrides
         // See CrcTable.ts for original logic
@@ -186,9 +206,57 @@ class ModManager {
         
         this.crcBuffer = buffer.data;
         // printInfo('CRC buffer updated.');
-        
-        // Also update the global CrcBuffer if possible or provide access to this one
-        // Ideally we replace the global one or ensure web.ts uses this one.
+    }
+
+    // Hook into NPC packing to inject mod configs
+    injectNpcs(configs: Map<string, ConfigLine[]>) {
+        for (const mod of this.mods) {
+            if (!mod.hasNpcOverrides) continue;
+
+            const npcConfigPath = path.join(mod.path, 'config/npc.npc');
+            if (fs.existsSync(npcConfigPath)) {
+                // Read and parse the mod's NPC config
+                // This logic mirrors readConfigs in PackShared.ts but simplifies for injection
+                const content = fs.readFileSync(npcConfigPath, 'utf-8');
+                const lines = content.split(/\r?\n/);
+                
+                let debugname: string | null = null;
+                let config: ConfigLine[] = [];
+
+                for (let line of lines) {
+                    line = line.trim();
+                    if (line.length === 0 || line.startsWith('//')) continue;
+
+                    if (line.startsWith('[')) {
+                        if (debugname !== null) {
+                            configs.set(debugname, config);
+                        }
+                        
+                        debugname = line.substring(1, line.length - 1);
+                        config = [];
+                        continue;
+                    }
+
+                    const separator = line.indexOf('=');
+                    if (separator === -1) continue;
+
+                    const key = line.substring(0, separator);
+                    const value = line.substring(separator + 1);
+
+                    // We reuse the existing NpcConfig parser if possible, or manual parse
+                    // Since parseNpcConfig needs to be imported:
+                    const parsed = parseNpcConfig(key, value);
+                    if (parsed !== null && parsed !== undefined) {
+                        config.push({ key, value: parsed });
+                    }
+                }
+
+                if (debugname !== null) {
+                    configs.set(debugname, config);
+                    printInfo(`[ModManager] Injected NPC: ${debugname}`);
+                }
+            }
+        }
     }
 }
 

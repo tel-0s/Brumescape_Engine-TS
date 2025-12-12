@@ -1,0 +1,12 @@
+[Jemery Mcclabe]
+desc=A totally normal human man.
+models=model_1
+heads=model_2
+gender=male
+walkanim=seq_1
+readyanim=seq_2
+category=man
+stats=1,1,1,1,1,1
+op1=Talk-to
+op2=Attack
+

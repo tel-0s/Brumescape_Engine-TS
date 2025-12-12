@@ -66,14 +66,19 @@ export function writeImage(img: { bitmap: Bitmap }, data: Packet, index: Packet,
 
             const pos = j * 4 + left * 4 + top * img.bitmap.width * 4;
 
-            const red = img.bitmap.data[pos + 0];
-            const green = img.bitmap.data[pos + 1];
-            const blue = img.bitmap.data[pos + 2];
-            const rgb = ((red << 16) | (green << 8) | blue) >>> 0;
+            let index = 0;
+            const alpha = img.bitmap.data[pos + 3];
+            
+            if (alpha >= 128) {
+                const red = img.bitmap.data[pos + 0];
+                const green = img.bitmap.data[pos + 1];
+                const blue = img.bitmap.data[pos + 2];
+                const rgb = ((red << 16) | (green << 8) | blue) >>> 0;
 
-            const index = colors.indexOf(rgb);
-            if (index === -1) {
-                break;
+                index = colors.indexOf(rgb);
+                if (index === -1) {
+                    index = 0; // Fallback to transparent if color not found (shouldn't happen)
+                }
             }
 
             data.p1(index);
@@ -87,14 +92,19 @@ export function writeImage(img: { bitmap: Bitmap }, data: Packet, index: Packet,
 
                 const pos = (x + y * img.bitmap.width) * 4 + left * 4 + top * img.bitmap.width * 4;
 
-                const red = img.bitmap.data[pos + 0];
-                const green = img.bitmap.data[pos + 1];
-                const blue = img.bitmap.data[pos + 2];
-                const rgb = ((red << 16) | (green << 8) | blue) >>> 0;
+                let index = 0;
+                const alpha = img.bitmap.data[pos + 3];
 
-                const index = colors.indexOf(rgb);
-                if (index === -1) {
-                    break;
+                if (alpha >= 128) {
+                    const red = img.bitmap.data[pos + 0];
+                    const green = img.bitmap.data[pos + 1];
+                    const blue = img.bitmap.data[pos + 2];
+                    const rgb = ((red << 16) | (green << 8) | blue) >>> 0;
+
+                    index = colors.indexOf(rgb);
+                    if (index === -1) {
+                        index = 0;
+                    }
                 }
 
                 data.p1(index);
@@ -116,6 +126,11 @@ function generatePalette(img: { bitmap: Bitmap }) {
 
     for (let j = 0; j < img.bitmap.width * img.bitmap.height; j++) {
         const pos = j * 4;
+
+        const alpha = img.bitmap.data[pos + 3];
+        if (alpha < 128) {
+            continue; // Transparent, maps to index 0 (0xff00ff) effectively
+        }
 
         const red = img.bitmap.data[pos + 0];
         const green = img.bitmap.data[pos + 1];

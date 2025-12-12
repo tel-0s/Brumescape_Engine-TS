@@ -32,6 +32,31 @@ export function generatePixelOrder(img: { bitmap: Bitmap }) {
     return columnMajorScore < rowMajorScore ? 0 : 1;
 }
 
+function getClosestColorIndex(rgb: number, colors: number[]): number {
+    let minDist = Number.MAX_VALUE;
+    let closest = 0;
+
+    const r1 = (rgb >> 16) & 0xff;
+    const g1 = (rgb >> 8) & 0xff;
+    const b1 = rgb & 0xff;
+
+    // Start from 1 because 0 is transparent/reserved
+    for (let i = 1; i < colors.length; i++) {
+        const c2 = colors[i];
+        const r2 = (c2 >> 16) & 0xff;
+        const g2 = (c2 >> 8) & 0xff;
+        const b2 = c2 & 0xff;
+
+        const dist = (r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2;
+        if (dist < minDist) {
+            minDist = dist;
+            closest = i;
+        }
+    }
+
+    return closest;
+}
+
 export function writeImage(img: { bitmap: Bitmap }, data: Packet, index: Packet, colors: number[], meta: Sprite | null = null) {
     let left = 0;
     let top = 0;
@@ -77,8 +102,7 @@ export function writeImage(img: { bitmap: Bitmap }, data: Packet, index: Packet,
 
                 index = colors.indexOf(rgb);
                 if (index === -1) {
-                    index = 0; // Fallback to transparent if color not found (shouldn't happen)
-                    // console.log(`[PixPack] Warning: Pixel not found in palette: ${rgb.toString(16)}`);
+                    index = getClosestColorIndex(rgb, colors);
                 }
             }
 
@@ -104,7 +128,7 @@ export function writeImage(img: { bitmap: Bitmap }, data: Packet, index: Packet,
 
                     index = colors.indexOf(rgb);
                     if (index === -1) {
-                        index = 0;
+                        index = getClosestColorIndex(rgb, colors);
                     }
                 }
 
@@ -154,13 +178,8 @@ export async function convertImage(index: Packet, srcPath: string, safeName: str
     data.p2(index.pos);
 
     const img = await Jimp.read(`${srcPath}/${safeName}.png`);
-    
-    if (safeName === 'logo') {
-        // Debug logging for logo dimensions
-        console.log(`[PixPack] Packing logo: ${img.bitmap.width}x${img.bitmap.height}`);
-    }
-
     let tileX = img.bitmap.width;
+    let tileY = img.bitmap.height;
     let tileY = img.bitmap.height;
 
     const sprites: Sprite[] = [];
@@ -215,10 +234,10 @@ export async function convertImage(index: Packet, srcPath: string, safeName: str
     }
 
     if (colors.length > 255) {
-        console.log(`[PixPack] Quantizing image (colors: ${colors.length} -> 255)`);
+        // console.log(`[PixPack] Quantizing image (colors: ${colors.length} -> 255)`);
         img.quantize({ colors: 255 });
         colors = generatePalette(img);
-        console.log(`[PixPack] Post-quantization colors: ${colors.length}`);
+        // console.log(`[PixPack] Post-quantization colors: ${colors.length}`);
     }
 
     index.p1(colors.length);

@@ -49,6 +49,7 @@ export async function generateServerSymbols() {
 
     let npcSymbols = '';
     const { NpcPack } = await import('#tools/pack/PackFile.js');
+    console.log(`[CompilerSymbols] NpcPack.names.size: ${NpcPack.names.size}`);
     
     // Use the in-memory NpcPack as the source of truth if it has been populated
     // This ensures injected mod NPCs are included

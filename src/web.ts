@@ -80,6 +80,8 @@ export async function startWeb() {
                         }
                     });
                 }
+                
+                // Allow matching with any CRC suffix (e.g. /title12345)
                 return new Response(Buffer.from(OnDemand.cache.read(0, 1)!));
             } else if (url.pathname.startsWith('/config')) {
                 const data = OnDemand.cache.read(0, 2);

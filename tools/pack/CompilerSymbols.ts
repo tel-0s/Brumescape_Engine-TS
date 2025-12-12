@@ -48,24 +48,22 @@ export async function generateServerSymbols() {
     fs.writeFileSync('data/symbols/constant.sym', constantSymbols);
 
     let npcSymbols = '';
+    const npcs = loadPack(`${Environment.BUILD_SRC_DIR}/pack/npc.pack`);
+    // Inject mod NPCs (they were registered in memory but not saved to the pack file)
+    // We need to access NpcPack directly to see the updated list
     const { NpcPack } = await import('#tools/pack/PackFile.js');
-    
-    // Use the in-memory NpcPack if it has names (populated by packClient), otherwise load from disk
-    let npcList: string[] = [];
-    if (NpcPack.names.size > 0) {
-        // Convert Map to array where index = ID
-        npcList = new Array(NpcPack.names.size);
+    if (NpcPack.names.size > npcs.length) {
+        // NpcPack has more names than the file, which means we injected some
         for (const [name, id] of NpcPack.names.entries()) {
-            npcList[id] = name;
+            if (id >= npcs.length) {
+                // This is a new one
+                npcSymbols += `${id}\t${name}\n`;
+            }
         }
-    } else {
-        npcList = loadPack(`${Environment.BUILD_SRC_DIR}/pack/npc.pack`);
     }
 
-    for (let i = 0; i < npcList.length; i++) {
-        if (npcList[i]) {
-            npcSymbols += `${i}\t${npcList[i]}\n`;
-        }
+    for (let i = 0; i < npcs.length; i++) {
+        npcSymbols += `${i}\t${npcs[i]}\n`;
     }
     fs.writeFileSync('data/symbols/npc.sym', npcSymbols);
 

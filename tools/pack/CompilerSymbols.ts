@@ -61,9 +61,12 @@ export async function generateServerSymbols() {
         }
     } else {
         // Fallback to loading from disk if NpcPack wasn't populated (e.g. running packServer alone)
+        // loadPack returns a sparse array where index = ID, value = name
         const npcs = loadPack(`${Environment.BUILD_SRC_DIR}/pack/npc.pack`);
         for (let i = 0; i < npcs.length; i++) {
-            npcSymbols += `${i}\t${npcs[i]}\n`;
+            if (npcs[i]) {
+                npcSymbols += `${i}\t${npcs[i]}\n`;
+            }
         }
     }
     fs.writeFileSync('data/symbols/npc.sym', npcSymbols);

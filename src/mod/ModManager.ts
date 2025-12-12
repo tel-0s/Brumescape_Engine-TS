@@ -80,10 +80,10 @@ export class Mod {
             // title.save() writes to disk, but we want the buffer.
             const buffer = title.encode();
             // Copy the data because we are releasing the packet back to the pool
-            const sliced = new Uint8Array(buffer.data.subarray(0, buffer.pos));
-            printInfo(`[${this.config.name}] Title override generated: ${sliced.length} bytes`);
+            const data = new Uint8Array(buffer.data.subarray(0, buffer.pos));
+            printInfo(`[${this.config.name}] Title override generated: ${data.length} bytes`);
             
-            this.overrides.set('title', sliced);
+            this.overrides.set('title', data);
             buffer.release();
             
         } catch (err) {

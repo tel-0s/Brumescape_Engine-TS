@@ -70,7 +70,14 @@ export async function startWeb() {
                 // Check mod manager for title override
                 const override = ModManager.getNamedOverride('title');
                 if (override) {
-                    return new Response(override);
+                    // Send with no-cache to ensure updates are seen
+                    return new Response(override, {
+                        headers: {
+                            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                            'Pragma': 'no-cache',
+                            'Expires': '0',
+                        }
+                    });
                 }
                 return new Response(Buffer.from(OnDemand.cache.read(0, 1)!));
             } else if (url.pathname.startsWith('/config')) {

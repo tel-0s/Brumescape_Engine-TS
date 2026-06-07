@@ -69,12 +69,21 @@ export async function generateServerSymbols() {
     }
     fs.writeFileSync('data/symbols/constant.sym', constantSymbols);
 
-    // npc, obj, and loc can all receive mod-injected entries, so generate their
-    // symbols from the in-memory Pack (id -> name), falling back to disk.
-    const { NpcPack, ObjPack, LocPack } = await import('#tools/pack/PackFile.js');
+    // These config types can all receive mod-injected entries, so generate
+    // their symbols from the in-memory Pack (id -> name), falling back to disk.
+    // (Typed configs like varp/varn/vars/param/inv are not yet injectable
+    // because their symbol files carry extra type/protect columns.)
+    const { NpcPack, ObjPack, LocPack, SeqPack, SpotAnimPack, IdkPack, EnumPack, StructPack, HuntPack, MesAnimPack } = await import('#tools/pack/PackFile.js');
     fs.writeFileSync('data/symbols/npc.sym', symbolsFromPack(NpcPack, `${Environment.BUILD_SRC_DIR}/pack/npc.pack`));
     fs.writeFileSync('data/symbols/obj.sym', symbolsFromPack(ObjPack, `${Environment.BUILD_SRC_DIR}/pack/obj.pack`));
     fs.writeFileSync('data/symbols/loc.sym', symbolsFromPack(LocPack, `${Environment.BUILD_SRC_DIR}/pack/loc.pack`));
+    fs.writeFileSync('data/symbols/seq.sym', symbolsFromPack(SeqPack, `${Environment.BUILD_SRC_DIR}/pack/seq.pack`));
+    fs.writeFileSync('data/symbols/spotanim.sym', symbolsFromPack(SpotAnimPack, `${Environment.BUILD_SRC_DIR}/pack/spotanim.pack`));
+    fs.writeFileSync('data/symbols/idk.sym', symbolsFromPack(IdkPack, `${Environment.BUILD_SRC_DIR}/pack/idk.pack`));
+    fs.writeFileSync('data/symbols/enum.sym', symbolsFromPack(EnumPack, `${Environment.BUILD_SRC_DIR}/pack/enum.pack`));
+    fs.writeFileSync('data/symbols/struct.sym', symbolsFromPack(StructPack, `${Environment.BUILD_SRC_DIR}/pack/struct.pack`));
+    fs.writeFileSync('data/symbols/hunt.sym', symbolsFromPack(HuntPack, `${Environment.BUILD_SRC_DIR}/pack/hunt.pack`));
+    fs.writeFileSync('data/symbols/mesanim.sym', symbolsFromPack(MesAnimPack, `${Environment.BUILD_SRC_DIR}/pack/mesanim.pack`));
 
     InvType.load('data/pack');
     let invSymbols = '';
@@ -91,39 +100,6 @@ export async function generateServerSymbols() {
     }
     fs.writeFileSync('data/symbols/inv.sym', invSymbols);
     fs.writeFileSync('data/symbols/writeinv.sym', writeInvSymbols);
-
-    let seqSymbols = '';
-    const seqs = loadPack(`${Environment.BUILD_SRC_DIR}/pack/seq.pack`);
-    for (let i = 0; i < seqs.length; i++) {
-        if (!seqs[i]) {
-            continue;
-        }
-
-        seqSymbols += `${i}\t${seqs[i]}\n`;
-    }
-    fs.writeFileSync('data/symbols/seq.sym', seqSymbols);
-
-    let idkSymbols = '';
-    const idks = loadPack(`${Environment.BUILD_SRC_DIR}/pack/idk.pack`);
-    for (let i = 0; i < idks.length; i++) {
-        if (!idks[i]) {
-            continue;
-        }
-
-        idkSymbols += `${i}\t${idks[i]}\n`;
-    }
-    fs.writeFileSync('data/symbols/idk.sym', idkSymbols);
-
-    let spotanimSymbols = '';
-    const spotanims = loadPack(`${Environment.BUILD_SRC_DIR}/pack/spotanim.pack`);
-    for (let i = 0; i < spotanims.length; i++) {
-        if (!spotanims[i]) {
-            continue;
-        }
-
-        spotanimSymbols += `${i}\t${spotanims[i]}\n`;
-    }
-    fs.writeFileSync('data/symbols/spotanim.sym', spotanimSymbols);
 
     Component.load('data/pack');
     let comSymbols = '';
@@ -207,34 +183,6 @@ export async function generateServerSymbols() {
         paramSymbols += `${i}\t${config.debugname}\t${config.getType()}\n`;
     }
     fs.writeFileSync('data/symbols/param.sym', paramSymbols);
-
-    let structSymbols = '';
-    const structs = loadPack(`${Environment.BUILD_SRC_DIR}/pack/struct.pack`);
-    for (let i = 0; i < structs.length; i++) {
-        structSymbols += `${i}\t${structs[i]}\n`;
-    }
-    fs.writeFileSync('data/symbols/struct.sym', structSymbols);
-
-    let enumSymbols = '';
-    const enums = loadPack(`${Environment.BUILD_SRC_DIR}/pack/enum.pack`);
-    for (let i = 0; i < enums.length; i++) {
-        enumSymbols += `${i}\t${enums[i]}\n`;
-    }
-    fs.writeFileSync('data/symbols/enum.sym', enumSymbols);
-
-    let huntSymbols = '';
-    const hunts = loadPack(`${Environment.BUILD_SRC_DIR}/pack/hunt.pack`);
-    for (let i = 0; i < hunts.length; i++) {
-        huntSymbols += `${i}\t${hunts[i]}\n`;
-    }
-    fs.writeFileSync('data/symbols/hunt.sym', huntSymbols);
-
-    let mesanimSymbols = '';
-    const mesanims = loadPack(`${Environment.BUILD_SRC_DIR}/pack/mesanim.pack`);
-    for (let i = 0; i < mesanims.length; i++) {
-        mesanimSymbols += `${i}\t${mesanims[i]}\n`;
-    }
-    fs.writeFileSync('data/symbols/mesanim.sym', mesanimSymbols);
 
     let synthSymbols = '';
     const synths = loadPack(`${Environment.BUILD_SRC_DIR}/pack/synth.pack`);

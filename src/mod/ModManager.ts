@@ -6,12 +6,19 @@ import { printInfo, printError } from '#/util/Logger.js';
 import Jagfile from '#/io/Jagfile.js';
 import Packet from '#/io/Packet.js';
 import { convertImage } from '#tools/pack/PixPack.js';
-import { LocPack, NpcPack, ObjPack } from '#tools/pack/PackFile.js';
+import { EnumPack, HuntPack, IdkPack, LocPack, MesAnimPack, NpcPack, ObjPack, SeqPack, SpotAnimPack, StructPack } from '#tools/pack/PackFile.js';
 import type { PackFile } from '#tools/pack/PackFileBase.js';
 import OnDemand from '#/engine/OnDemand.js';
+import { parseEnumConfig } from '#tools/pack/config/EnumConfig.js';
+import { parseHuntConfig } from '#tools/pack/config/HuntConfig.js';
+import { parseIdkConfig } from '#tools/pack/config/IdkConfig.js';
 import { parseLocConfig } from '#tools/pack/config/LocConfig.js';
+import { parseMesAnimConfig } from '#tools/pack/config/MesAnimConfig.js';
 import { parseNpcConfig } from '#tools/pack/config/NpcConfig.js';
 import { parseObjConfig } from '#tools/pack/config/ObjConfig.js';
+import { parseSeqConfig } from '#tools/pack/config/SeqConfig.js';
+import { parseSpotAnimConfig } from '#tools/pack/config/SpotAnimConfig.js';
+import { parseStructConfig } from '#tools/pack/config/StructConfig.js';
 import { ConfigLine, ConfigParseCallback } from '#tools/pack/config/PackShared.js';
 
 // Config types a mod may inject via config/<name>.<ext>. Resolved lazily (not
@@ -25,6 +32,20 @@ function injectableType(extension: string): { pack: PackFile; parse: ConfigParse
             return { pack: ObjPack, parse: parseObjConfig };
         case '.loc':
             return { pack: LocPack, parse: parseLocConfig };
+        case '.seq':
+            return { pack: SeqPack, parse: parseSeqConfig };
+        case '.spotanim':
+            return { pack: SpotAnimPack, parse: parseSpotAnimConfig };
+        case '.idk':
+            return { pack: IdkPack, parse: parseIdkConfig };
+        case '.enum':
+            return { pack: EnumPack, parse: parseEnumConfig };
+        case '.struct':
+            return { pack: StructPack, parse: parseStructConfig };
+        case '.hunt':
+            return { pack: HuntPack, parse: parseHuntConfig };
+        case '.mesanim':
+            return { pack: MesAnimPack, parse: parseMesAnimConfig };
         default:
             return null;
     }

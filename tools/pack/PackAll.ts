@@ -107,6 +107,20 @@ async function injectModScripts() {
             }
         }
     }
+
+    // shouldBuild() only tracks base content + tool mtimes, so it would skip a
+    // config type that only a mod changed and the injection (which happens
+    // inside readConfigs) would never run. Invalidate the cached server .dat for
+    // every config type a mod provides, forcing that type to repack and thus
+    // re-run injection + symbol generation. Works for any future type too.
+    for (const mod of ModManager.mods) {
+        for (const file of mod.configFiles) {
+            const dat = `data/pack/server/${path.extname(file).slice(1)}.dat`;
+            if (fs.existsSync(dat)) {
+                fs.rmSync(dat);
+            }
+        }
+    }
 }
 
 export async function packServer() {

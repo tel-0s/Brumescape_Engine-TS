@@ -3,3 +3,8 @@ mes("You search the barrel. Danvid is not in here. Just oil.");
 
 [opheld1,danvids_olive_oil]
 mes("It's slippery, and smells faintly of your brother.");
+
+// Demonstrates an injected enum (a new config type) referenced by name
+[debugproc,mcclabe_quote]
+mes(enum(int, string, mcclabe_quotes, 1));
+mes(enum(int, string, mcclabe_quotes, 2));

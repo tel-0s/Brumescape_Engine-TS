@@ -49,18 +49,16 @@ export async function generateServerSymbols() {
 
     let npcSymbols = '';
     const { NpcPack } = await import('#tools/pack/PackFile.js');
-    console.log(`[CompilerSymbols] NpcPack.names.size: ${NpcPack.names.size}`);
-    
-    // Use the in-memory NpcPack as the source of truth if it has been populated
-    // This ensures injected mod NPCs are included
-    if (NpcPack.names.size > 0) {
-        npcSymbols = ''; // Reset
+
+    // Use the in-memory NpcPack as the source of truth if it has been populated.
+    // This ensures injected mod NPCs are included. NpcPack.pack is the id -> name
+    // Map<number, string>; note that NpcPack.names is only a Set<string> and
+    // register() does not update it, so we must read from .pack here.
+    if (NpcPack.pack.size > 0) {
         // Sort by ID to ensure correct order
-        // NpcPack.names is Map<string, number> where string is name, number is ID
-        const entries = Array.from(NpcPack.names.entries());
-        const sorted = entries.sort((a, b) => a[1] - b[1]);
-        
-        for (const [name, id] of sorted) {
+        const sorted = Array.from(NpcPack.pack.entries()).sort((a, b) => a[0] - b[0]);
+
+        for (const [id, name] of sorted) {
             npcSymbols += `${id}\t${name}\n`;
         }
     } else {

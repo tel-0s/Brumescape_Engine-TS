@@ -68,12 +68,12 @@ function injectableType(extension: string): { pack: PackFile; parse: ConfigParse
 
 // Persistent mod ID allocation. Mod-injected config entries get stable IDs
 // recorded in mods/idmap.json so they survive rebuilds and adding/removing other
-// mods (keeping saved player data valid). A per-type floor keeps mod IDs clear of
-// base content, so base-content growth below the floor cannot collide with them.
-const DEFAULT_ID_FLOOR = 5000;
-
+// mods (keeping saved player data valid). IDs are assigned contiguously right
+// after base content — NOT in a high reserved range — because the engine packs
+// configs densely AND several systems are sized to the config count (e.g.
+// Player.save writes every varp into a fixed buffer; the client allocates
+// id-indexed arrays). A high id would inflate those counts and overflow them.
 interface IdMapEntry {
-    floor: number;
     next: number;
     ids: Record<string, number>;
 }
@@ -322,7 +322,7 @@ class ModManager {
 
         let entry = this.idMap![key];
         if (!entry) {
-            entry = { floor: DEFAULT_ID_FLOOR, next: DEFAULT_ID_FLOOR, ids: {} };
+            entry = { next: 0, ids: {} };
             this.idMap![key] = entry;
             this.idMapDirty = true;
         }
@@ -331,9 +331,10 @@ class ModManager {
         const occupant = id !== undefined ? pack.pack.get(id) : undefined;
         if (id === undefined || (occupant !== undefined && occupant !== name)) {
             if (id !== undefined) {
-                printError(`[ModManager] ${key} id ${id} (${name}) is already used by '${occupant}' (base content grew past the floor?). Reassigning.`);
+                printError(`[ModManager] ${key} id ${id} (${name}) is already used by '${occupant}' (base content changed?). Reassigning.`);
             }
-            id = Math.max(entry.next, entry.floor, pack.max);
+            // Assign contiguously, right after base content / prior mod entries
+            id = Math.max(pack.max, entry.next);
             entry.ids[name] = id;
             this.idMapDirty = true;
         }

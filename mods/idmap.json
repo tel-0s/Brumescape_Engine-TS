@@ -1,37 +1,32 @@
 {
     "enum": {
-        "floor": 5000,
-        "next": 5001,
+        "next": 107,
         "ids": {
-            "mclabe_quotes": 5000
+            "mclabe_quotes": 106
         }
     },
     "loc": {
-        "floor": 5000,
-        "next": 5001,
+        "next": 3551,
         "ids": {
-            "olive_oil_barrel": 5000
+            "olive_oil_barrel": 3550
         }
     },
     "npc": {
-        "floor": 5000,
-        "next": 5001,
+        "next": 1056,
         "ids": {
-            "jemery_mclabe": 5000
+            "jemery_mclabe": 1055
         }
     },
     "obj": {
-        "floor": 5000,
-        "next": 5001,
+        "next": 2979,
         "ids": {
-            "danvids_olive_oil": 5000
+            "danvids_olive_oil": 2978
         }
     },
     "varp": {
-        "floor": 5000,
-        "next": 5001,
+        "next": 310,
         "ids": {
-            "mclabe_grief_stage": 5000
+            "mclabe_grief_stage": 309
         }
     }
 }

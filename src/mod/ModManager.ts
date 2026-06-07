@@ -66,6 +66,18 @@ function injectableType(extension: string): { pack: PackFile; parse: ConfigParse
     }
 }
 
+// Persistent mod ID allocation. Mod-injected config entries get stable IDs
+// recorded in mods/idmap.json so they survive rebuilds and adding/removing other
+// mods (keeping saved player data valid). A per-type floor keeps mod IDs clear of
+// base content, so base-content growth below the floor cannot collide with them.
+const DEFAULT_ID_FLOOR = 5000;
+
+interface IdMapEntry {
+    floor: number;
+    next: number;
+    ids: Record<string, number>;
+}
+
 export interface ModConfig {
     name: string;
     version: string;
@@ -188,6 +200,14 @@ class ModManager {
     // Cached CRC buffer including mod overrides
     crcBuffer: Uint8Array | null = null;
 
+    // Persisted name -> id assignments per config type (mods/idmap.json)
+    idMap: Record<string, IdMapEntry> | null = null;
+    idMapDirty = false;
+
+    get idMapPath(): string {
+        return path.join(this.modsDir, 'idmap.json');
+    }
+
     async init() {
         if (!fs.existsSync(this.modsDir)) {
             fs.mkdirSync(this.modsDir);
@@ -277,6 +297,51 @@ class ModManager {
         // printInfo('CRC buffer updated.');
     }
 
+    loadIdMap() {
+        if (this.idMap) return;
+        if (fs.existsSync(this.idMapPath)) {
+            this.idMap = JSON.parse(fs.readFileSync(this.idMapPath, 'utf-8')) as Record<string, IdMapEntry>;
+        } else {
+            this.idMap = {};
+        }
+    }
+
+    saveIdMap() {
+        if (!this.idMap || !this.idMapDirty) return;
+        fs.writeFileSync(this.idMapPath, JSON.stringify(this.idMap, null, 4) + '\n');
+        this.idMapDirty = false;
+    }
+
+    // Assign a stable ID to a newly-injected config entry, reusing the persisted
+    // ID when present. Guards against an ID already claimed by base content.
+    assignId(extension: string, pack: PackFile, name: string): number {
+        this.loadIdMap();
+        const key = extension.slice(1); // '.npc' -> 'npc'
+
+        let entry = this.idMap![key];
+        if (!entry) {
+            entry = { floor: DEFAULT_ID_FLOOR, next: DEFAULT_ID_FLOOR, ids: {} };
+            this.idMap![key] = entry;
+            this.idMapDirty = true;
+        }
+
+        let id = entry.ids[name];
+        const occupant = id !== undefined ? pack.pack.get(id) : undefined;
+        if (id === undefined || (occupant !== undefined && occupant !== name)) {
+            if (id !== undefined) {
+                printError(`[ModManager] ${key} id ${id} (${name}) is already used by '${occupant}' (base content grew past the floor?). Reassigning.`);
+            }
+            id = Math.max(entry.next, entry.floor, pack.max);
+            entry.ids[name] = id;
+            this.idMapDirty = true;
+        }
+        if (id + 1 > entry.next) {
+            entry.next = id + 1;
+            this.idMapDirty = true;
+        }
+        return id;
+    }
+
     // Hook into config packing to inject mod-provided configs of a given type.
     // Mirrors the parse loop in readConfigs (PackShared) but registers any new
     // names into the in-memory Pack so they receive an ID and flow through both
@@ -316,8 +381,12 @@ class ModManager {
                     // updates it; the names Set is not), so use it to tell a
                     // brand-new entry apart from an override of base content.
                     if (!type.pack.nameToId.has(debugname)) {
-                        const id = type.pack.max++;
+                        const id = this.assignId(extension, type.pack, debugname);
                         type.pack.register(id, debugname);
+                        // Dense packers loop 0..Pack.max, so max must cover a high id
+                        if (id + 1 > type.pack.max) {
+                            type.pack.max = id + 1;
+                        }
                         printInfo(`[ModManager] Registered ${extension} ${debugname} (ID: ${id})`);
                     } else {
                         printInfo(`[ModManager] Overriding ${extension} ${debugname}`);
@@ -349,6 +418,8 @@ class ModManager {
                 flush();
             }
         }
+
+        this.saveIdMap();
     }
 }
 

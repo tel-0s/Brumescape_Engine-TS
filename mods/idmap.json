@@ -1,0 +1,37 @@
+{
+    "enum": {
+        "floor": 5000,
+        "next": 5001,
+        "ids": {
+            "mclabe_quotes": 5000
+        }
+    },
+    "loc": {
+        "floor": 5000,
+        "next": 5001,
+        "ids": {
+            "olive_oil_barrel": 5000
+        }
+    },
+    "npc": {
+        "floor": 5000,
+        "next": 5001,
+        "ids": {
+            "jemery_mclabe": 5000
+        }
+    },
+    "obj": {
+        "floor": 5000,
+        "next": 5001,
+        "ids": {
+            "danvids_olive_oil": 5000
+        }
+    },
+    "varp": {
+        "floor": 5000,
+        "next": 5001,
+        "ids": {
+            "mclabe_grief_stage": 5000
+        }
+    }
+}

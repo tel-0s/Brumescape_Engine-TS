@@ -219,24 +219,27 @@ export function packObjConfigs(configs: Map<string, ConfigLine[]>, modelFlags: n
                 { key: 'certtemplate', value: template_for_cert }
             ];
         } else {
-            config = configs.get(debugname)!;
+            config = configs.get(debugname);
 
-            // if no name we fill with the debug name
-            let hasName = false;
-            let hasModel = false;
-            for (let j = 0; j < config.length; j++) {
-                const key = config[j].key;
+            // if no name we fill with the debug name (skip empty id gaps, which
+            // occur when mod content reserves higher ids than base content uses)
+            if (config) {
+                let hasName = false;
+                let hasModel = false;
+                for (let j = 0; j < config.length; j++) {
+                    const key = config[j].key;
 
-                if (key === 'name') {
-                    hasName = true;
-                } else if (key === 'model') {
-                    hasModel = true;
+                    if (key === 'name') {
+                        hasName = true;
+                    } else if (key === 'model') {
+                        hasModel = true;
+                    }
                 }
-            }
 
-            if (!hasName && hasModel) {
-                const name = debugname.charAt(0).toUpperCase() + debugname.slice(1).replace(/_/g, ' ');
-                config.push({ key: 'name', value: name });
+                if (!hasName && hasModel) {
+                    const name = debugname.charAt(0).toUpperCase() + debugname.slice(1).replace(/_/g, ' ');
+                    config.push({ key: 'name', value: name });
+                }
             }
         }
 

@@ -1,12 +1,12 @@
 [oploc1,olive_oil_barrel]
 // Reads and writes an injected varp (player variable)
-%mcclabe_grief_stage = calc(%mcclabe_grief_stage + 1);
+%mclabe_grief_stage = calc(%mclabe_grief_stage + 1);
 mes("You search the barrel. Danvid is not in here. Just oil.");
 
 [opheld1,danvids_olive_oil]
 mes("It's slippery, and smells faintly of your brother.");
 
 // Demonstrates an injected enum (a new config type) referenced by name
-[debugproc,mcclabe_quote]
-mes(enum(int, string, mcclabe_quotes, 1));
-mes(enum(int, string, mcclabe_quotes, 2));
+[debugproc,mclabe_quote]
+mes(enum(int, string, mclabe_quotes, 1));
+mes(enum(int, string, mclabe_quotes, 2));

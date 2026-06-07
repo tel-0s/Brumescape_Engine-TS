@@ -220,6 +220,9 @@ class ModManager {
 
     async loadMods() {
         if (!fs.existsSync(this.modsDir)) return;
+        // Reset first so repeated loads (e.g. on ::rebuild, which re-runs
+        // ModManager.init) replace the list instead of appending duplicates.
+        this.mods = [];
         const entries = fs.readdirSync(this.modsDir, { withFileTypes: true });
         
         for (const entry of entries) {

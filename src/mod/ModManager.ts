@@ -6,7 +6,7 @@ import { printInfo, printError } from '#/util/Logger.js';
 import Jagfile from '#/io/Jagfile.js';
 import Packet from '#/io/Packet.js';
 import { convertImage } from '#tools/pack/PixPack.js';
-import { EnumPack, HuntPack, IdkPack, InvPack, LocPack, MesAnimPack, NpcPack, ObjPack, ParamPack, SeqPack, SpotAnimPack, StructPack, VarnPack, VarpPack, VarsPack } from '#tools/pack/PackFile.js';
+import { EnumPack, HuntPack, IdkPack, InvPack, LocPack, MesAnimPack, ModelPack, NpcPack, ObjPack, ParamPack, SeqPack, SpotAnimPack, StructPack, VarnPack, VarpPack, VarsPack } from '#tools/pack/PackFile.js';
 import type { PackFile } from '#tools/pack/PackFileBase.js';
 import OnDemand from '#/engine/OnDemand.js';
 import { parseEnumConfig } from '#tools/pack/config/EnumConfig.js';
@@ -117,6 +117,16 @@ export class Mod {
             }
         }
 
+        // Check for custom models (.ob2)
+        const modelDir = path.join(this.path, 'models');
+        if (fs.existsSync(modelDir)) {
+            for (const file of fs.readdirSync(modelDir)) {
+                if (file.endsWith('.ob2')) {
+                    this.modelFiles.push(path.join(modelDir, file));
+                }
+            }
+        }
+
         // Check for scripts
         const scriptDir = path.join(this.path, 'scripts');
         if (fs.existsSync(scriptDir)) {
@@ -127,6 +137,8 @@ export class Mod {
 
     // Absolute paths of injectable config files found in this mod's config/ dir
     configFiles: string[] = [];
+    // Absolute paths of custom .ob2 model files in this mod's models/ dir
+    modelFiles: string[] = [];
     scriptPath: string | null = null;
 
     async packTitle() {
@@ -422,6 +434,35 @@ class ModManager {
                 }
 
                 flush();
+            }
+        }
+
+        this.saveIdMap();
+    }
+
+    // Register each mod's custom .ob2 model names into ModelPack with stable ids
+    // (idmap key 'model'), so config model refs resolve and they get packed into
+    // the cache + versionlist. Must run AFTER revalidatePack() (which resets the
+    // Packs) and BEFORE configs are packed (which resolve model names to ids).
+    async registerModModels() {
+        if (this.mods.length === 0) {
+            if (!fs.existsSync(this.modsDir)) return;
+            await this.loadMods();
+        }
+
+        for (const mod of this.mods) {
+            for (const file of mod.modelFiles) {
+                const name = path.basename(file, path.extname(file));
+                if (ModelPack.nameToId.has(name)) {
+                    continue;
+                }
+                const id = this.assignId('.model', ModelPack, name);
+                ModelPack.register(id, name);
+                // Dense packers/versionlist loop 0..ModelPack.max
+                if (id + 1 > ModelPack.max) {
+                    ModelPack.max = id + 1;
+                }
+                printInfo(`[ModManager] Registered model ${name} (ID: ${id})`);
             }
         }
 

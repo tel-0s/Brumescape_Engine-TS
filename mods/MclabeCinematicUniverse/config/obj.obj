@@ -1,8 +1,8 @@
 [danvids_olive_oil]
 name=Danvid's Olive Oil
 desc=The olive oil my brother Danvid drowned in.
-// Reuses an existing obj model (bones) until custom models are supported
-model=model_2674_obj
+// Custom model shipped by this mod (models/mclabe_oil_drum.ob2)
+model=mclabe_oil_drum
 2dxof=2
 2dzoom=1410
 2dyan=368

@@ -6,6 +6,7 @@ import { parentPort } from 'worker_threads';
 import * as fflate from 'fflate';
 
 import Environment from '#/util/Environment.js';
+import { compressGz } from '#/io/GZip.js';
 import { ModelPack, revalidatePack } from '#tools/pack/PackFile.js';
 import { packClientWordenc } from '#tools/pack/chat/pack.js';
 import { packConfigs } from '#tools/pack/config/PackShared.js';
@@ -38,6 +39,10 @@ export async function packClient(modelFlags: number[]) {
     clearFsCache();
     revalidatePack();
 
+    // Register mod custom models into ModelPack (after revalidatePack reset them,
+    // before configs resolve model names and before the modelFlags sizing below).
+    await ModManager.registerModModels();
+
     for (let i = 0; i < ModelPack.max; i++) {
         modelFlags[i] = 0;
     }
@@ -52,6 +57,7 @@ export async function packClient(modelFlags: number[]) {
 
     packClientWordenc(cache);
     packClientSound(cache);
+    packModModels(cache);
     packClientModel(cache, modelFlags);
     packMaps(cache);
     packClientMusic(cache);
@@ -81,6 +87,25 @@ export async function packClient(modelFlags: number[]) {
             type: 'dev_progress',
             text: 'Packed client cache'
         });
+    }
+}
+
+// Write each mod's custom .ob2 models into cache archive 1 at their registered
+// id (assigned by ModManager.registerModModels). The versionlist step then picks
+// them up since it loops 0..ModelPack.max.
+function packModModels(cache: FileStream) {
+    for (const mod of ModManager.mods) {
+        for (const file of mod.modelFiles) {
+            const name = path.basename(file, path.extname(file));
+            const id = ModelPack.getByName(name);
+            if (id === -1) {
+                continue;
+            }
+            const data = fs.readFileSync(file);
+            if (data.length) {
+                cache.write(1, id, compressGz(data)!, 1);
+            }
+        }
     }
 }
 

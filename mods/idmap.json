@@ -28,5 +28,11 @@
         "ids": {
             "mclabe_grief_stage": 309
         }
+    },
+    "model": {
+        "next": 3609,
+        "ids": {
+            "mclabe_oil_drum": 3608
+        }
     }
 }

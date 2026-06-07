@@ -84,6 +84,8 @@ export interface ModConfig {
     author: string;
     description?: string;
     dependencies?: Record<string, string>;
+    // Optional [proc,<name>] run once on world boot to place content in the world
+    init?: string;
 }
 
 export class Mod {

@@ -314,6 +314,32 @@ class World {
         makeCrcs();
     }
 
+    // Run each loaded mod's init proc (mod.json "init" field) once on world boot,
+    // after scripts are loaded and the map is ready. Lets mods place NPCs/locs via
+    // npc_add/loc_add. Re-runs every boot, so placement is idempotent without
+    // needing to persist spawned entities.
+    private runModInit(): void {
+        for (const mod of ModManager.mods) {
+            const procName = mod.config.init;
+            if (!procName) {
+                continue;
+            }
+
+            const script = ScriptProvider.getByName(`[proc,${procName}]`);
+            if (!script) {
+                printError(`[ModManager] ${mod.config.name}: init proc [proc,${procName}] not found`);
+                continue;
+            }
+
+            try {
+                ScriptRunner.execute(ScriptRunner.init(script, null, null, []));
+                printInfo(`[ModManager] Ran init for ${mod.config.name}`);
+            } catch (err) {
+                printError(`[ModManager] ${mod.config.name} init failed: ${err}`);
+            }
+        }
+    }
+
     async start(skipMaps = false, startCycle = true): Promise<void> {
         printInfo('Starting world');
 
@@ -326,6 +352,8 @@ class World {
             if (!skipMaps) {
                 this.gameMap.init();
             }
+
+            this.runModInit();
         }
 
         setTimeout(() => {

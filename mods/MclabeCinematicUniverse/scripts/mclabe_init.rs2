@@ -1,0 +1,5 @@
+// Run once on every world boot by the engine (mod.json "init" field).
+// Places Jemery in the world so no ::npcadd is needed. Re-runs each boot, so
+// it is idempotent without persisting the spawned npc.
+[proc,mclabe_init]
+npc_add(0_50_50_32_32, jemery_mclabe, 2147483647);

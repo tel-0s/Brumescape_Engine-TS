@@ -3,5 +3,6 @@
   "description": "Adds characters from the Jemery Mclabe Cinematic Universe",
   "version": "1.0.0",
   "author": "tel0s",
-  "dependencies": {}
+  "dependencies": {},
+  "init": "mclabe_init"
 }

@@ -371,10 +371,12 @@ class World {
                 }
                 const shape = spawn.shape ?? LocShape.CENTREPIECE_STRAIGHT;
                 const angle = spawn.angle ?? LocAngle.WEST;
-                if (type.blockwalk) {
-                    changeLocCollision(shape, angle, type.blockrange, type.length, type.width, type.active, at.x, at.z, at.level, true);
-                }
-                this.gameMap.getZone(at.x, at.z, at.level).addStaticLoc(new Loc(at.level, at.x, at.z, type.width, type.length, EntityLifeCycle.RESPAWN, type.id, shape, angle));
+                // Mod locs aren't in the client's downloaded map data, so a static
+                // loc would never render. Add as a dynamic (DESPAWN) loc via addLoc,
+                // which broadcasts it and delivers it to players entering the zone
+                // later; duration -1 keeps it untracked = permanent. (addLoc handles
+                // collision internally.)
+                this.addLoc(new Loc(at.level, at.x, at.z, type.width, type.length, EntityLifeCycle.DESPAWN, type.id, shape, angle), -1);
                 locCount++;
             }
 

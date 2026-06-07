@@ -34,5 +34,11 @@
         "ids": {
             "mclabe_oil_drum": 3608
         }
+    },
+    "texture": {
+        "next": 51,
+        "ids": {
+            "mclabe_oil_texture": 50
+        }
     }
 }

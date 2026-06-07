@@ -6,7 +6,7 @@ import { printInfo, printError } from '#/util/Logger.js';
 import Jagfile from '#/io/Jagfile.js';
 import Packet from '#/io/Packet.js';
 import { convertImage } from '#tools/pack/PixPack.js';
-import { EnumPack, HuntPack, IdkPack, InvPack, LocPack, MesAnimPack, ModelPack, NpcPack, ObjPack, ParamPack, SeqPack, SpotAnimPack, StructPack, VarnPack, VarpPack, VarsPack } from '#tools/pack/PackFile.js';
+import { EnumPack, HuntPack, IdkPack, InvPack, LocPack, MesAnimPack, ModelPack, NpcPack, ObjPack, ParamPack, SeqPack, SpotAnimPack, StructPack, TexturePack, VarnPack, VarpPack, VarsPack } from '#tools/pack/PackFile.js';
 import type { PackFile } from '#tools/pack/PackFileBase.js';
 import OnDemand from '#/engine/OnDemand.js';
 import { parseEnumConfig } from '#tools/pack/config/EnumConfig.js';
@@ -127,6 +127,16 @@ export class Mod {
             }
         }
 
+        // Check for custom textures (.png)
+        const textureDir = path.join(this.path, 'textures');
+        if (fs.existsSync(textureDir)) {
+            for (const file of fs.readdirSync(textureDir)) {
+                if (file.endsWith('.png')) {
+                    this.textureFiles.push(path.join(textureDir, file));
+                }
+            }
+        }
+
         // Check for scripts
         const scriptDir = path.join(this.path, 'scripts');
         if (fs.existsSync(scriptDir)) {
@@ -139,6 +149,8 @@ export class Mod {
     configFiles: string[] = [];
     // Absolute paths of custom .ob2 model files in this mod's models/ dir
     modelFiles: string[] = [];
+    // Absolute paths of custom .png texture files in this mod's textures/ dir
+    textureFiles: string[] = [];
     scriptPath: string | null = null;
 
     async packTitle() {
@@ -217,6 +229,9 @@ class ModManager {
     // Persisted name -> id assignments per config type (mods/idmap.json)
     idMap: Record<string, IdMapEntry> | null = null;
     idMapDirty = false;
+
+    // Custom texture name -> directory holding its <name>.png (for the packer)
+    modTextureDirs: Map<string, string> = new Map();
 
     get idMapPath(): string {
         return path.join(this.modsDir, 'idmap.json');
@@ -463,6 +478,37 @@ class ModManager {
                     ModelPack.max = id + 1;
                 }
                 printInfo(`[ModManager] Registered model ${name} (ID: ${id})`);
+            }
+        }
+
+        this.saveIdMap();
+    }
+
+    // Register each mod's custom .png textures into TexturePack with stable ids
+    // (idmap key 'texture', contiguous after the 50 base textures). Records the
+    // source dir per name so packClientTexture can convertImage from the mod dir.
+    // Must run after revalidatePack() and before packClientTexture().
+    async registerModTextures() {
+        if (this.mods.length === 0) {
+            if (!fs.existsSync(this.modsDir)) return;
+            await this.loadMods();
+        }
+
+        this.modTextureDirs.clear();
+
+        for (const mod of this.mods) {
+            for (const file of mod.textureFiles) {
+                const name = path.basename(file, path.extname(file));
+                this.modTextureDirs.set(name, path.dirname(file));
+                if (TexturePack.nameToId.has(name)) {
+                    continue;
+                }
+                const id = this.assignId('.texture', TexturePack, name);
+                TexturePack.register(id, name);
+                if (id + 1 > TexturePack.max) {
+                    TexturePack.max = id + 1;
+                }
+                printInfo(`[ModManager] Registered texture ${name} (ID: ${id})`);
             }
         }
 

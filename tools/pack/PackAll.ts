@@ -39,9 +39,10 @@ export async function packClient(modelFlags: number[]) {
     clearFsCache();
     revalidatePack();
 
-    // Register mod custom models into ModelPack (after revalidatePack reset them,
-    // before configs resolve model names and before the modelFlags sizing below).
+    // Register mod custom models/textures into their Packs (after revalidatePack
+    // reset them, before configs resolve names and before the modelFlags sizing).
     await ModManager.registerModModels();
+    await ModManager.registerModTextures();
 
     for (let i = 0; i < ModelPack.max; i++) {
         modelFlags[i] = 0;

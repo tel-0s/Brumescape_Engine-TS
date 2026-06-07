@@ -1,0 +1,8 @@
+{
+    "npcs": [
+        { "id": "jemery_mclabe", "coord": "0_50_50_32_32" }
+    ],
+    "locs": [
+        { "id": "olive_oil_barrel", "coord": "0_50_50_34_32" }
+    ]
+}

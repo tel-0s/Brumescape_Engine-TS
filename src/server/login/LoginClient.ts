@@ -21,7 +21,11 @@ export class LoginClient extends InternalClient {
             JSON.stringify({
                 type: 'world_startup',
                 nodeId: this.nodeId,
-                nodeTime: Date.now()
+                nodeTime: Date.now(),
+                // LoginServer's world_startup reset matches on profile too; without
+                // this it was `WHERE profile = undefined` and cleared nothing, so
+                // stale logins were never reset on boot.
+                profile: Environment.NODE_PROFILE
             })
         );
     }

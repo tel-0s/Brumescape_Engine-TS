@@ -6,11 +6,29 @@ import { printInfo, printError } from '#/util/Logger.js';
 import Jagfile from '#/io/Jagfile.js';
 import Packet from '#/io/Packet.js';
 import { convertImage } from '#tools/pack/PixPack.js';
-import { NpcPack } from '#tools/pack/PackFile.js';
+import { LocPack, NpcPack, ObjPack } from '#tools/pack/PackFile.js';
+import type { PackFile } from '#tools/pack/PackFileBase.js';
 import OnDemand from '#/engine/OnDemand.js';
-import NpcType from '#/cache/config/NpcType.js';
-import { packNpcConfigs, parseNpcConfig } from '#tools/pack/config/NpcConfig.js';
-import { ConfigLine } from '#tools/pack/config/PackShared.js';
+import { parseLocConfig } from '#tools/pack/config/LocConfig.js';
+import { parseNpcConfig } from '#tools/pack/config/NpcConfig.js';
+import { parseObjConfig } from '#tools/pack/config/ObjConfig.js';
+import { ConfigLine, ConfigParseCallback } from '#tools/pack/config/PackShared.js';
+
+// Config types a mod may inject via config/<name>.<ext>. Resolved lazily (not
+// in a module-level const) to stay safe against the import cycle between
+// ModManager, the config parsers, and PackShared.
+function injectableType(extension: string): { pack: PackFile; parse: ConfigParseCallback } | null {
+    switch (extension) {
+        case '.npc':
+            return { pack: NpcPack, parse: parseNpcConfig };
+        case '.obj':
+            return { pack: ObjPack, parse: parseObjConfig };
+        case '.loc':
+            return { pack: LocPack, parse: parseLocConfig };
+        default:
+            return null;
+    }
+}
 
 export interface ModConfig {
     name: string;
@@ -39,9 +57,14 @@ export class Mod {
             await this.packTitle();
         }
 
-        // Check for NPC overrides
-        if (fs.existsSync(path.join(this.path, 'config/npc.npc'))) {
-            this.hasNpcOverrides = true;
+        // Check for config overrides (npc, obj, loc, ...)
+        const configDir = path.join(this.path, 'config');
+        if (fs.existsSync(configDir)) {
+            for (const file of fs.readdirSync(configDir)) {
+                if (injectableType(path.extname(file)) !== null) {
+                    this.configFiles.push(path.join(configDir, file));
+                }
+            }
         }
 
         // Check for scripts
@@ -52,7 +75,8 @@ export class Mod {
         }
     }
 
-    hasNpcOverrides = false;
+    // Absolute paths of injectable config files found in this mod's config/ dir
+    configFiles: string[] = [];
     scriptPath: string | null = null;
 
     async packTitle() {
@@ -217,39 +241,59 @@ class ModManager {
         // printInfo('CRC buffer updated.');
     }
 
-    // Hook into NPC packing to inject mod configs
-    async injectNpcs(configs: Map<string, ConfigLine[]>) {
+    // Hook into config packing to inject mod-provided configs of a given type.
+    // Mirrors the parse loop in readConfigs (PackShared) but registers any new
+    // names into the in-memory Pack so they receive an ID and flow through both
+    // packing and symbol generation. No-op for non-injectable types or when no
+    // mod provides that type.
+    async injectConfigs(extension: string, configs: Map<string, ConfigLine[]>) {
+        const type = injectableType(extension);
+        if (!type) {
+            return;
+        }
+
         if (this.mods.length === 0) {
-            // Need to ensure mods are loaded if injectNpcs is called before init
+            // Ensure mods are loaded if injection runs before init()
             if (!fs.existsSync(this.modsDir)) return;
             await this.loadMods();
         }
 
         for (const mod of this.mods) {
-            if (!mod.hasNpcOverrides) continue;
+            for (const file of mod.configFiles) {
+                if (path.extname(file) !== extension) {
+                    continue;
+                }
 
-            const npcConfigPath = path.join(mod.path, 'config/npc.npc');
-            console.log(`[ModManager] Checking for NPC config at: ${npcConfigPath}`);
-            
-            if (fs.existsSync(npcConfigPath)) {
-                // Read and parse the mod's NPC config
-                // This logic mirrors readConfigs in PackShared.ts but simplifies for injection
-                const content = fs.readFileSync(npcConfigPath, 'utf-8');
-                const lines = content.split(/\r?\n/);
-                
+                const lines = fs.readFileSync(file, 'utf-8').split(/\r?\n/);
+
                 let debugname: string | null = null;
                 let config: ConfigLine[] = [];
+
+                const flush = () => {
+                    if (debugname === null) {
+                        return;
+                    }
+
+                    configs.set(debugname, config);
+
+                    // nameToId is the authoritative id<->name map (register()
+                    // updates it; the names Set is not), so use it to tell a
+                    // brand-new entry apart from an override of base content.
+                    if (!type.pack.nameToId.has(debugname)) {
+                        const id = type.pack.max++;
+                        type.pack.register(id, debugname);
+                        printInfo(`[ModManager] Registered ${extension} ${debugname} (ID: ${id})`);
+                    } else {
+                        printInfo(`[ModManager] Overriding ${extension} ${debugname}`);
+                    }
+                };
 
                 for (let line of lines) {
                     line = line.trim();
                     if (line.length === 0 || line.startsWith('//')) continue;
 
                     if (line.startsWith('[')) {
-                        if (debugname !== null) {
-                            configs.set(debugname, config);
-                            printInfo(`[ModManager] Injected NPC: ${debugname}`);
-                        }
-                        
+                        flush();
                         debugname = line.substring(1, line.length - 1);
                         config = [];
                         continue;
@@ -260,29 +304,13 @@ class ModManager {
 
                     const key = line.substring(0, separator);
                     const value = line.substring(separator + 1);
-
-                    // We reuse the existing NpcConfig parser if possible, or manual parse
-                    // Since parseNpcConfig needs to be imported:
-                    const parsed = parseNpcConfig(key, value);
+                    const parsed = type.parse(key, value);
                     if (parsed !== null && parsed !== undefined) {
                         config.push({ key, value: parsed });
                     }
                 }
 
-                if (debugname !== null) {
-                    configs.set(debugname, config);
-                    
-                    // Register with NpcPack so it gets an ID and is included in the packing iteration
-                    if (!NpcPack.names.has(debugname)) {
-                        const id = NpcPack.max++;
-                        NpcPack.register(id, debugname);
-                        printInfo(`[ModManager] Registered NPC: ${debugname} (ID: ${id})`);
-                    }
-                    
-                    // printInfo(`[ModManager] Injected NPC: ${debugname}`);
-                }
-            } else {
-                printError(`[ModManager] NPC config file not found: ${npcConfigPath}`);
+                flush();
             }
         }
     }

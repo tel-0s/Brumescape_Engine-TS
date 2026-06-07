@@ -1,0 +1,6 @@
+[olive_oil_barrel]
+name=Barrel of Olive Oil
+desc=Danvid was last seen near here.
+// Reuses an existing loc model (crate) until custom models are supported
+model=model_loc_63
+op1=Search

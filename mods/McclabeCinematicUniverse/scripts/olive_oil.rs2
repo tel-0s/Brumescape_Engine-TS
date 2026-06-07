@@ -1,0 +1,5 @@
+[oploc1,olive_oil_barrel]
+mes("You search the barrel. Danvid is not in here. Just oil.");
+
+[opheld1,danvids_olive_oil]
+mes("It's slippery, and smells faintly of your brother.");

@@ -248,10 +248,8 @@ export async function readConfigs(dirTree: Set<string>, extension: string, requi
         }
     }
 
-    // Inject mod configs if applicable
-    if (extension === '.npc') {
-        await ModManager.injectNpcs(configs);
-    }
+    // Inject any mod-provided configs for this type (no-op if none)
+    await ModManager.injectConfigs(extension, configs);
 
     const { client, server } = pack(configs, modelFlags);
 

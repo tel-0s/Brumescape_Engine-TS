@@ -15,6 +15,28 @@ import { ScriptOpcodeMap } from '#/engine/script/ScriptOpcode.js';
 import ScriptOpcodePointers from '#/engine/script/ScriptOpcodePointers.js';
 import Environment from '#/util/Environment.js';
 import { loadDir, loadPack } from '#tools/pack/NameMap.js';
+import type { PackFile } from '#tools/pack/PackFileBase.js';
+
+// Build an id<TAB>name symbol table, preferring the in-memory Pack (which
+// includes any mod-injected entries) and falling back to the on-disk .pack
+// when the Pack hasn't been populated (e.g. running packServer standalone).
+function symbolsFromPack(pack: PackFile, fallbackPackPath: string): string {
+    let out = '';
+    if (pack.pack.size > 0) {
+        const sorted = Array.from(pack.pack.entries()).sort((a, b) => a[0] - b[0]);
+        for (const [id, name] of sorted) {
+            out += `${id}\t${name}\n`;
+        }
+    } else {
+        const names = loadPack(fallbackPackPath);
+        for (let i = 0; i < names.length; i++) {
+            if (names[i]) {
+                out += `${i}\t${names[i]}\n`;
+            }
+        }
+    }
+    return out;
+}
 
 export async function generateServerSymbols() {
     fs.mkdirSync('data/symbols', { recursive: true });
@@ -47,38 +69,12 @@ export async function generateServerSymbols() {
     }
     fs.writeFileSync('data/symbols/constant.sym', constantSymbols);
 
-    let npcSymbols = '';
-    const { NpcPack } = await import('#tools/pack/PackFile.js');
-
-    // Use the in-memory NpcPack as the source of truth if it has been populated.
-    // This ensures injected mod NPCs are included. NpcPack.pack is the id -> name
-    // Map<number, string>; note that NpcPack.names is only a Set<string> and
-    // register() does not update it, so we must read from .pack here.
-    if (NpcPack.pack.size > 0) {
-        // Sort by ID to ensure correct order
-        const sorted = Array.from(NpcPack.pack.entries()).sort((a, b) => a[0] - b[0]);
-
-        for (const [id, name] of sorted) {
-            npcSymbols += `${id}\t${name}\n`;
-        }
-    } else {
-        // Fallback to loading from disk if NpcPack wasn't populated (e.g. running packServer alone)
-        // loadPack returns a sparse array where index = ID, value = name
-        const npcs = loadPack(`${Environment.BUILD_SRC_DIR}/pack/npc.pack`);
-        for (let i = 0; i < npcs.length; i++) {
-            if (npcs[i]) {
-                npcSymbols += `${i}\t${npcs[i]}\n`;
-            }
-        }
-    }
-    fs.writeFileSync('data/symbols/npc.sym', npcSymbols);
-
-    let objSymbols = '';
-    const objs = loadPack(`${Environment.BUILD_SRC_DIR}/pack/obj.pack`);
-    for (let i = 0; i < objs.length; i++) {
-        objSymbols += `${i}\t${objs[i]}\n`;
-    }
-    fs.writeFileSync('data/symbols/obj.sym', objSymbols);
+    // npc, obj, and loc can all receive mod-injected entries, so generate their
+    // symbols from the in-memory Pack (id -> name), falling back to disk.
+    const { NpcPack, ObjPack, LocPack } = await import('#tools/pack/PackFile.js');
+    fs.writeFileSync('data/symbols/npc.sym', symbolsFromPack(NpcPack, `${Environment.BUILD_SRC_DIR}/pack/npc.pack`));
+    fs.writeFileSync('data/symbols/obj.sym', symbolsFromPack(ObjPack, `${Environment.BUILD_SRC_DIR}/pack/obj.pack`));
+    fs.writeFileSync('data/symbols/loc.sym', symbolsFromPack(LocPack, `${Environment.BUILD_SRC_DIR}/pack/loc.pack`));
 
     InvType.load('data/pack');
     let invSymbols = '';
@@ -128,17 +124,6 @@ export async function generateServerSymbols() {
         spotanimSymbols += `${i}\t${spotanims[i]}\n`;
     }
     fs.writeFileSync('data/symbols/spotanim.sym', spotanimSymbols);
-
-    let locSymbols = '';
-    const locs = loadPack(`${Environment.BUILD_SRC_DIR}/pack/loc.pack`);
-    for (let i = 0; i < locs.length; i++) {
-        if (!locs[i]) {
-            continue;
-        }
-
-        locSymbols += `${i}\t${locs[i]}\n`;
-    }
-    fs.writeFileSync('data/symbols/loc.sym', locSymbols);
 
     Component.load('data/pack');
     let comSymbols = '';

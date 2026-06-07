@@ -1,4 +1,6 @@
 [oploc1,olive_oil_barrel]
+// Reads and writes an injected varp (player variable)
+%mcclabe_grief_stage = calc(%mcclabe_grief_stage + 1);
 mes("You search the barrel. Danvid is not in here. Just oil.");
 
 [opheld1,danvids_olive_oil]

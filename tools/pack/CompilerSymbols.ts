@@ -38,6 +38,19 @@ function symbolsFromPack(pack: PackFile, fallbackPackPath: string): string {
     return out;
 }
 
+// Like symbolsFromPack but for config types whose .sym carries extra columns
+// (type, protect, ...). Iterates the in-memory Pack (id -> name, includes mod
+// injections) and lets the caller format each row, pulling the extra columns
+// from the matching Type loaded from the freshly-packed data/pack.
+function typedSymbols(pack: PackFile, format: (id: number, name: string) => string): string {
+    let out = '';
+    const sorted = Array.from(pack.pack.entries()).sort((a, b) => a[0] - b[0]);
+    for (const [id, name] of sorted) {
+        out += format(id, name);
+    }
+    return out;
+}
+
 export async function generateServerSymbols() {
     fs.mkdirSync('data/symbols', { recursive: true });
 
@@ -73,7 +86,7 @@ export async function generateServerSymbols() {
     // their symbols from the in-memory Pack (id -> name), falling back to disk.
     // (Typed configs like varp/varn/vars/param/inv are not yet injectable
     // because their symbol files carry extra type/protect columns.)
-    const { NpcPack, ObjPack, LocPack, SeqPack, SpotAnimPack, IdkPack, EnumPack, StructPack, HuntPack, MesAnimPack } = await import('#tools/pack/PackFile.js');
+    const { NpcPack, ObjPack, LocPack, SeqPack, SpotAnimPack, IdkPack, EnumPack, StructPack, HuntPack, MesAnimPack, VarpPack, VarnPack, VarsPack, ParamPack, InvPack } = await import('#tools/pack/PackFile.js');
     fs.writeFileSync('data/symbols/npc.sym', symbolsFromPack(NpcPack, `${Environment.BUILD_SRC_DIR}/pack/npc.pack`));
     fs.writeFileSync('data/symbols/obj.sym', symbolsFromPack(ObjPack, `${Environment.BUILD_SRC_DIR}/pack/obj.pack`));
     fs.writeFileSync('data/symbols/loc.sym', symbolsFromPack(LocPack, `${Environment.BUILD_SRC_DIR}/pack/loc.pack`));
@@ -88,15 +101,10 @@ export async function generateServerSymbols() {
     InvType.load('data/pack');
     let invSymbols = '';
     let writeInvSymbols = '';
-    const invs = loadPack(`${Environment.BUILD_SRC_DIR}/pack/inv.pack`);
-    for (let i = 0; i < invs.length; i++) {
-        if (!invs[i]) {
-            continue;
-        }
-
-        const inv = InvType.get(i);
-        invSymbols += `${i}\t${inv.debugname}\n`;
-        writeInvSymbols += `${i}\t${inv.debugname}\tnone\t${inv.protect}\n`;
+    for (const [id, name] of Array.from(InvPack.pack.entries()).sort((a, b) => a[0] - b[0])) {
+        const inv = InvType.get(id);
+        invSymbols += `${id}\t${name}\n`;
+        writeInvSymbols += `${id}\t${name}\tnone\t${inv.protect}\n`;
     }
     fs.writeFileSync('data/symbols/inv.sym', invSymbols);
     fs.writeFileSync('data/symbols/writeinv.sym', writeInvSymbols);
@@ -132,57 +140,28 @@ export async function generateServerSymbols() {
     fs.writeFileSync('data/symbols/overlayinterface.sym', overlaySymbols);
 
     VarPlayerType.load('data/pack');
-    let varpSymbols = '';
-    const varps = loadPack(`${Environment.BUILD_SRC_DIR}/pack/varp.pack`);
-    for (let i = 0; i < varps.length; i++) {
-        if (!varps[i]) {
-            continue;
-        }
-
-        const varp = VarPlayerType.get(i);
-        varpSymbols += `${i}\t${varp.debugname}\t${ScriptVarType.getType(varp.type)}\t${varp.protect}\n`;
-    }
-    fs.writeFileSync('data/symbols/varp.sym', varpSymbols);
+    fs.writeFileSync('data/symbols/varp.sym', typedSymbols(VarpPack, (id, name) => {
+        const varp = VarPlayerType.get(id);
+        return `${id}\t${name}\t${ScriptVarType.getType(varp.type)}\t${varp.protect}\n`;
+    }));
 
     VarNpcType.load('data/pack');
-    let varnSymbols = '';
-    const varns = loadPack(`${Environment.BUILD_SRC_DIR}/pack/varn.pack`);
-    for (let i = 0; i < varns.length; i++) {
-        if (!varns[i]) {
-            continue;
-        }
-
-        const varn = VarNpcType.get(i);
-        varnSymbols += `${i}\t${varn.debugname}\t${ScriptVarType.getType(varn.type)}\n`;
-    }
-    fs.writeFileSync('data/symbols/varn.sym', varnSymbols);
+    fs.writeFileSync('data/symbols/varn.sym', typedSymbols(VarnPack, (id, name) => {
+        const varn = VarNpcType.get(id);
+        return `${id}\t${name}\t${ScriptVarType.getType(varn.type)}\n`;
+    }));
 
     VarSharedType.load('data/pack');
-    let varsSymbols = '';
-    const varss = loadPack(`${Environment.BUILD_SRC_DIR}/pack/vars.pack`);
-    for (let i = 0; i < varss.length; i++) {
-        if (!varss[i]) {
-            continue;
-        }
-
-        const vars = VarSharedType.get(i);
-        varsSymbols += `${i}\t${vars.debugname}\t${ScriptVarType.getType(vars.type)}\n`;
-    }
-    fs.writeFileSync('data/symbols/vars.sym', varsSymbols);
+    fs.writeFileSync('data/symbols/vars.sym', typedSymbols(VarsPack, (id, name) => {
+        const vars = VarSharedType.get(id);
+        return `${id}\t${name}\t${ScriptVarType.getType(vars.type)}\n`;
+    }));
 
     ParamType.load('data/pack');
-
-    let paramSymbols = '';
-    const params = loadPack(`${Environment.BUILD_SRC_DIR}/pack/param.pack`);
-    for (let i = 0; i < params.length; i++) {
-        if (!params[i]) {
-            continue;
-        }
-
-        const config = ParamType.get(i);
-        paramSymbols += `${i}\t${config.debugname}\t${config.getType()}\n`;
-    }
-    fs.writeFileSync('data/symbols/param.sym', paramSymbols);
+    fs.writeFileSync('data/symbols/param.sym', typedSymbols(ParamPack, (id, name) => {
+        const config = ParamType.get(id);
+        return `${id}\t${name}\t${config.getType()}\n`;
+    }));
 
     let synthSymbols = '';
     const synths = loadPack(`${Environment.BUILD_SRC_DIR}/pack/synth.pack`);

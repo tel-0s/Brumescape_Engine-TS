@@ -6,19 +6,24 @@ import { printInfo, printError } from '#/util/Logger.js';
 import Jagfile from '#/io/Jagfile.js';
 import Packet from '#/io/Packet.js';
 import { convertImage } from '#tools/pack/PixPack.js';
-import { EnumPack, HuntPack, IdkPack, LocPack, MesAnimPack, NpcPack, ObjPack, SeqPack, SpotAnimPack, StructPack } from '#tools/pack/PackFile.js';
+import { EnumPack, HuntPack, IdkPack, InvPack, LocPack, MesAnimPack, NpcPack, ObjPack, ParamPack, SeqPack, SpotAnimPack, StructPack, VarnPack, VarpPack, VarsPack } from '#tools/pack/PackFile.js';
 import type { PackFile } from '#tools/pack/PackFileBase.js';
 import OnDemand from '#/engine/OnDemand.js';
 import { parseEnumConfig } from '#tools/pack/config/EnumConfig.js';
 import { parseHuntConfig } from '#tools/pack/config/HuntConfig.js';
 import { parseIdkConfig } from '#tools/pack/config/IdkConfig.js';
+import { parseInvConfig } from '#tools/pack/config/InvConfig.js';
 import { parseLocConfig } from '#tools/pack/config/LocConfig.js';
 import { parseMesAnimConfig } from '#tools/pack/config/MesAnimConfig.js';
 import { parseNpcConfig } from '#tools/pack/config/NpcConfig.js';
 import { parseObjConfig } from '#tools/pack/config/ObjConfig.js';
+import { parseParamConfig } from '#tools/pack/config/ParamConfig.js';
 import { parseSeqConfig } from '#tools/pack/config/SeqConfig.js';
 import { parseSpotAnimConfig } from '#tools/pack/config/SpotAnimConfig.js';
 import { parseStructConfig } from '#tools/pack/config/StructConfig.js';
+import { parseVarnConfig } from '#tools/pack/config/VarnConfig.js';
+import { parseVarpConfig } from '#tools/pack/config/VarpConfig.js';
+import { parseVarsConfig } from '#tools/pack/config/VarsConfig.js';
 import { ConfigLine, ConfigParseCallback } from '#tools/pack/config/PackShared.js';
 
 // Config types a mod may inject via config/<name>.<ext>. Resolved lazily (not
@@ -46,6 +51,16 @@ function injectableType(extension: string): { pack: PackFile; parse: ConfigParse
             return { pack: HuntPack, parse: parseHuntConfig };
         case '.mesanim':
             return { pack: MesAnimPack, parse: parseMesAnimConfig };
+        case '.varp':
+            return { pack: VarpPack, parse: parseVarpConfig };
+        case '.varn':
+            return { pack: VarnPack, parse: parseVarnConfig };
+        case '.vars':
+            return { pack: VarsPack, parse: parseVarsConfig };
+        case '.param':
+            return { pack: ParamPack, parse: parseParamConfig };
+        case '.inv':
+            return { pack: InvPack, parse: parseInvConfig };
         default:
             return null;
     }

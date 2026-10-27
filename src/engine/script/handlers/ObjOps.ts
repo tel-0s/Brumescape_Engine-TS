@@ -110,7 +110,7 @@ const ObjOps: CommandHandlers = {
     },
 
     [ScriptOpcode.OBJ_DEL]: state => {
-        const duration: number = ObjType.get(state.activeObj.type).respawnrate;
+        const duration: number = state.activeObj.respawnrate !== -1 ? state.activeObj.respawnrate : ObjType.get(state.activeObj.type).respawnrate;
         if (state.pointerGet(ActivePlayer[state.intOperand])) {
             World.removeObj(state.activeObj, duration);
         } else {
@@ -154,7 +154,7 @@ const ObjOps: CommandHandlers = {
         });
         
         if (obj.lifecycle === EntityLifeCycle.RESPAWN) {
-            World.removeObj(obj, objType.respawnrate);
+            World.removeObj(obj, obj.respawnrate !== -1 ? obj.respawnrate : objType.respawnrate);
         } else if (obj.lifecycle === EntityLifeCycle.DESPAWN) {
             World.removeObj(obj, 0);
         }

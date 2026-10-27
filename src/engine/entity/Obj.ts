@@ -13,6 +13,10 @@ export default class Obj extends NonPathingEntity {
     type: number;
     count: number;
 
+    // Ticks until a taken static obj respawns. -1 uses ObjType.respawnrate;
+    // mod spawns.json can set it per spawn (src/mod/capabilities/spawns.ts).
+    respawnrate: number = -1;
+
     // runtime
     receiver64: bigint = Obj.NO_RECEIVER;
     reveal: number = -1;

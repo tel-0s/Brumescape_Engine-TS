@@ -34,12 +34,13 @@ The capabilities that exist now are the reference examples:
 | `script-overrides.ts` | `scripts/**/*.rs2` that redefine a script | Slot A. Plans override chains in `afterRevalidate` (registers the generated `original_*` names). In `beforeCompile`: renames replaced blocks, stages base files under `data/pack/mods/overrides/` and omits the originals (`CompilerConfig.omit`). |
 | `spawns.ts` | `spawns.json` | `beforeSymbols`: checks names and values. `worldBoot`: places npcs, locs and objs. |
 | `maps.ts` | `maps/**/m<x>_<z>.jm2`, `.patch.jm2`, `maps/free2play.csv`, `maps/multiway.csv` | `afterRevalidate`: `registerName('map', MapPack, …)` for new squares, `setAsset('map', …)`, `recordOutput` for new squares, merged zone lists. `before.maps`: resolves names and patches into numeric `.jm2` files in `data/pack/mods/maps/`. `tools/pack/map/Pack.js` reads `getAssets('map')`. |
-| `init.ts` | mod.json `"init"` | `worldBoot`: runs `[proc,<init>]`. |
+| `init.ts` | mod.json `"init"` | `afterRevalidate`: the build stops if no script defines `[proc,<init>]`. `worldBoot`: runs it. |
 | `sprites.ts` | `sprites/**/<name>.png` (+ `meta/<name>.opt`, `.pal.png`) | Slot B. `afterRevalidate`: stages each sprite with its meta in `data/pack/mods/sprites/`, `setAsset('sprite', …)`. `tools/pack/sprite/media.ts` reads `getAsset('sprite')` (new names appended, base names replaced) and checks the media index limit. Exports `getSpriteShape()`. |
 | `interfaces.ts` | `interfaces/**/*.if`, `*.ifpatch` | Slot B, after `sprites.ts`. `afterRevalidate`: resolves whole files, then patches in load order; `registerName('interface', InterfacePack, …)` for new interfaces and components; stages each touched interface's effective source in `data/pack/mods/interfaces/`, `setAsset('interface', …)`, `markTouched('.if')`. `tools/pack/interface/PackShared.ts` reads the staged source; `CompilerSymbols.ts` builds interface and component symbols from `InterfacePack`. |
 | `anims.ts` | `anims/**/<set>.json` | Slot C. Compiles bone-form and base-form sources (`tools/pack/graphics/AnimSource.ts`) to `.anim` files in `data/pack/mods/anims/`; `registerName` for `animset` and `frame` names, `setAsset('animset', …)`. `tools/pack/graphics/pack.ts` writes mod sets over base sets. |
 | `objmodels.ts` | `models/**/<name>.obj` (+ `.mtl`, `<name>.json`) | Slot C, after `models.ts`. Converts to `.ob2` in `data/pack/mods/models/` (`tools/pack/graphics/ObjModel.ts`), claims `model` names across `.ob2` and `.obj` in load order, `setAsset('model', …)`. |
 | `data.ts` | `config/**/*.constant`, `.dbtable`, `.dbrow`, `.flo`, `category=` | `constants` hook merges constants (and `afterSymbols` rewrites `constant.sym`); registers the three config types with `registerConfigType`; registers categories in `afterRevalidate`; validates floor ids in `configs`. |
+| `files.ts` | every file of an enabled mod | Registered last. `afterRevalidate`: a file that no capability listed (`ModManager.wasListed`) and that is not a side file (`mod.json`, `spawns.json`, notes, `meta/` files, `.mtl`, OBJ options) gives a warning; a build file type in the wrong folder stops the build. A capability must therefore list its files in `prepare` or `afterRevalidate`. |
 | `audio.ts` | `synth/*.synth`, `songs/*.mid`, `jingles/*.mid` | `registerName` plus `setAsset('synth'/'midi'/'midikind', …)`. `sound/pack.ts`, `midi/pack.ts` and `versionlist/pack.ts` read the assets. `worldBoot` re-registers the midi names, because `midi_song` looks names up in the server's `MidiPack`. `src/mod/SynthFormat.ts` validates wave files. |
 
 ## The build pipeline and its hook points
@@ -158,6 +159,11 @@ listFiles(subdir: string, exts: string | readonly string[], options?: { recursiv
     // mod by mod in load order, sorted by path within a mod. Skips dotfiles.
     // ModFile = { mod, path (absolute), relPath ('config/npcs/a.npc'),
     //             subPath ('npcs/a.npc'), name ('a'), ext ('.npc') }
+    // Follows symbolic links (ModDiscovery.listModTree). Records every file
+    // it returns: files.ts warns about mod files that nothing listed.
+wasListed(file: string): boolean
+listModFiles(mod: Mod): string[]
+    // Every file of one mod (absolute, sorted)
 
 // --- ids ---
 registerName(kind: string, pack: PackFile, name: string): number
@@ -190,6 +196,10 @@ error(where: ModFile | Mod, line: number | null, message: string): ModError
     // "[mod <name>] <relPath>:<line>: <message>". `line` is 1-based.
     // Usage: throw ModManager.error(file, 12, 'Invalid property value: x=y');
 warn(where: ModFile | Mod, line: number | null, message: string): void
+rejectTrailingComment(file: ModFile, lineNo: number, line: string): void
+    // Throws for a '//' after a space or tab on a non-comment line. Use it for
+    // any key=value mod text that the base parsers read (they keep the rest
+    // of the line as the value).
 
 // --- build output ---
 stagingDir(sub?: string): string

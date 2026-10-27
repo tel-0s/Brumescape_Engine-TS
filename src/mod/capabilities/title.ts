@@ -33,6 +33,7 @@ const capability: ModCapability = {
 
         for (const file of ModManager.listFiles('binary', '.jpg', { recursive: false })) {
             if (file.name !== 'title') {
+                ModManager.warn(file, null, 'unknown binary file (only binary/title.jpg, the title screen background, is read); ignored');
                 continue;
             }
             const previous = ModManager.claim('binary', file.name, file);

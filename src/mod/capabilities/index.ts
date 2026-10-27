@@ -40,4 +40,7 @@ ModManager.register((await import('#/mod/capabilities/maps.js')).default);
 ModManager.register((await import('#/mod/capabilities/data.js')).default);
 ModManager.register((await import('#/mod/capabilities/audio.js')).default);
 
+// ---- checks: keep last (runs after every capability listed its files) ----
+ModManager.register((await import('#/mod/capabilities/files.js')).default);
+
 // ---- (end of registration point) ----

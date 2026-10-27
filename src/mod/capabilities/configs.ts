@@ -66,12 +66,14 @@ function modConfigFiles(extension?: string): ModFile[] {
 }
 
 // [name] headers of a mod config file, with 1-based line numbers. Uses the
-// same header rules as parseConfigLines (a line starting with '[').
+// same header rules as parseConfigLines (a line starting with '['). Also
+// rejects end-of-line comments, in full configs and patches alike.
 function scanHeaders(file: ModFile): { name: string; line: number }[] {
     const headers: { name: string; line: number }[] = [];
     const lines = splitConfigLines(fs.readFileSync(file.path, 'utf-8'));
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
+        ModManager.rejectTrailingComment(file, i + 1, line);
         if (!line.startsWith('[')) {
             continue;
         }

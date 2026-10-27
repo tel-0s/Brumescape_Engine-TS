@@ -89,7 +89,7 @@ All folders are optional. Delete the folders that you do not use.
 | `version` | yes | Shown in the build log. |
 | `author`, `description` | no | Information only. |
 | `dependencies` | no | `{ "<mod name>": "<version>" }`. Each listed mod must be installed and enabled. It loads before this mod. Versions are not checked yet. |
-| `init` | no | A proc name. `[proc,<init>]` runs on every server start, after the map loads. There is no player: use it for world setup. If the proc does not exist, the server logs a warning. |
+| `init` | no | A proc name. `[proc,<init>]` runs on every server start, after the map loads. There is no player: use it for world setup. If no script defines the proc, the build stops. |
 
 ## Enable, disable and load order
 
@@ -133,8 +133,12 @@ All folders are optional. Subfolders are allowed, except in `title/` and
 | `binary/title.jpg` | Title screen background. | [Title screen](#title-screen) |
 | `spawns.json` | npcs, locs and objs placed when the server starts. | [spawns.json](#spawnsjson) |
 
-Other files, such as a `README.md` in the mod root, are ignored. Files whose
-name starts with `.` are ignored everywhere.
+Notes (`*.md`, `*.txt`, `LICENSE`, `CREDITS` and so on) can go anywhere.
+Files whose name starts with `.` are ignored everywhere. Any other file that
+no part of the build reads gives a warning (for example `config/quest.const`
+or a `.png` next to an OBJ model). A build file in a folder where it is not
+read stops the build: for example `scripts/configs/guard.npc` (the layout of
+base content; mod configs go under `config/`) or `script/quest.rs2`.
 
 A mod folder in `mods/`, or a folder or file inside a mod, can be a symbolic
 link, for example to a mod in its own repository
@@ -236,10 +240,10 @@ op1=Talk-to
 - Mod configs use the same parser as base content. You can use base and mod
   constants (`^name`) and refer to base or mod names (models, seqs, params,
   categories and so on).
-- A comment (`//`) must be on its own line, in configs, patches and
-  interfaces. Text after a value is part of the value: `name=Bob // a name`
-  sets the name to `Bob // a name`. (Map files and scripts allow comments at
-  the end of a line.)
+- A comment (`//`) must be on its own line, in configs, patches, constants
+  and interfaces. The parser keeps all text after `=` as the value, so the
+  build stops at a line like `name=Bob // a name` (a `//` after a space or
+  tab). Map files and scripts allow comments at the end of a line.
 - A varp that must be saved with the player needs `scope=perm`.
 - A config with a base name replaces the whole base config, so give every
   key that you need. To change only some keys, use a patch.

@@ -64,6 +64,8 @@ class ModManager {
     private claims: Map<string, Map<string, ModFile>> = new Map();
     private assets: Map<string, Map<string, string>> = new Map();
     private touched: Set<string> = new Set();
+    // Every file listFiles() returned in this build (see wasListed)
+    private listed: Set<string> = new Set();
 
     // True while a build runs after the mod set changed (see beginBuild).
     // Every shouldBuild*() check in tools/pack/PackFile.ts returns true then.
@@ -142,6 +144,7 @@ class ModManager {
         this.claims.clear();
         this.assets.clear();
         this.touched.clear();
+        this.listed.clear();
 
         // Incremental packing (shouldBuild*) only compares base content
         // mtimes, so it cannot see a mod change. Compare a fingerprint of the
@@ -380,6 +383,7 @@ class ModManager {
                 if (!wanted.includes(ext)) {
                     continue;
                 }
+                this.listed.add(file);
 
                 out.push({
                     mod,
@@ -393,6 +397,18 @@ class ModManager {
         }
 
         return out;
+    }
+
+    // True if listFiles() returned this file (absolute path) in this build,
+    // to any capability. capabilities/files.ts reports the files of enabled
+    // mods that nothing listed: they would be silently left out of the build.
+    wasListed(file: string): boolean {
+        return this.listed.has(file);
+    }
+
+    // Every file of a mod (absolute paths, sorted, links followed)
+    listModFiles(mod: Mod): string[] {
+        return walk(mod.dir, true);
     }
 
     // Stable id for a new name of the given kind ('npc', 'model', 'script', ...).
@@ -579,6 +595,22 @@ class ModManager {
 
     warn(where: ModFile | Mod, line: number | null, message: string) {
         printWarning(formatLocation(where, line) + message);
+    }
+
+    // Configs, patches, constants and interfaces have no end-of-line
+    // comments: the base parser keeps all text after '=' as the value, so
+    // `name=Bob // a name` names the npc "Bob // a name". Base content never
+    // has '//' in a value, so in mod files a '//' after a space or tab is a
+    // mistake. `line` is the raw line; `lineNo` is 1-based.
+    rejectTrailingComment(file: ModFile, lineNo: number, line: string) {
+        const text = line.trim();
+        if (text.startsWith('//')) {
+            return;
+        }
+        const at = text.search(/\s\/\//);
+        if (at !== -1) {
+            throw this.error(file, lineNo, `a comment must be on its own line: text after a value is part of the value, so '${text.substring(at).trim()}' would end up in it. Move the comment to the line above.`);
+        }
     }
 
     // ------------------------------------------------------------------------

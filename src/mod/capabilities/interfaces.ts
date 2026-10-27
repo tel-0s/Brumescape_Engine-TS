@@ -121,6 +121,7 @@ function parseModFile(file: ModFile): { root: ParsedSection; sections: ParsedSec
         if (line.length === 0 || line.startsWith('//')) {
             continue;
         }
+        ModManager.rejectTrailingComment(file, lineNo, line);
 
         if (line.startsWith('[')) {
             if (!line.endsWith(']')) {

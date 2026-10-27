@@ -61,6 +61,7 @@ function parseConstantFile(file: ModFile): ModConstant[] {
         if (!line || line.startsWith('//')) {
             continue;
         }
+        ModManager.rejectTrailingComment(file, i + 1, line);
 
         let override = false;
         if (line.startsWith('override ')) {

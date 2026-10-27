@@ -1,7 +1,6 @@
 import FileStream from '#/io/FileStream.js';
 import Packet from '#/io/Packet.js';
 import ClientSocket from '#/server/ClientSocket.js';
-import ModManager from '#/mod/ModManager.js';
 
 type OnDemandRequest = {
     client: ClientSocket;
@@ -86,10 +85,7 @@ class OnDemand {
     }
 
     private send(client: ClientSocket, archive: number, file: number) {
-        let req = ModManager.getOverride(archive + 1, file);
-        if (!req) {
-            req = this.cache.read(archive + 1, file);
-        }
+        const req = this.cache.read(archive + 1, file);
 
         if (req) {
             let pos = 0;

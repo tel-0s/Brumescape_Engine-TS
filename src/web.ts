@@ -11,7 +11,6 @@ import NullClientSocket from '#/server/NullClientSocket.js';
 import WSClientSocket from '#/server/ws/WSClientSocket.js';
 import Environment from '#/util/Environment.js';
 import OnDemand from '#/engine/OnDemand.js';
-import ModManager from '#/mod/ModManager.js';
 import { tryParseInt } from '#/util/TryParse.js';
 import { getPublicPerDeploymentToken } from '#/io/PemUtil.js';
 
@@ -62,39 +61,23 @@ export async function startWeb() {
 
                 return new Response(null, { status: 404 });
             } else if (url.pathname.startsWith('/crc')) {
-                if (ModManager.crcBuffer) {
-                    return new Response(Buffer.from(ModManager.crcBuffer), {
-                        headers: {
-                            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-                            'Pragma': 'no-cache',
-                            'Expires': '0',
-                        }
-                    });
-                }
+                // CRCs of cache archive 0 (title, config, ...). Mod content is
+                // packed into the cache at build time, so makeCrcs() covers it and
+                // World.reload() refreshes it after a hot repack.
                 return new Response(Buffer.from(CrcBuffer.data), {
-                        headers: {
-                            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-                            'Pragma': 'no-cache',
-                            'Expires': '0',
-                        }
-                    });
+                    headers: {
+                        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                        Pragma: 'no-cache',
+                        Expires: '0'
+                    }
+                });
             } else if (url.pathname.startsWith('/title')) {
-                // Check mod manager for title override
-                const override = ModManager.getNamedOverride('title');
-                if (override) {
-                    // console.log(`[Web] Serving custom title (${override.length} bytes)`);
-                    // Send with no-cache to ensure updates are seen
-                    return new Response(override, {
-                        headers: {
-                            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-                            'Pragma': 'no-cache',
-                            'Expires': '0',
-                        }
-                    });
-                }
-                
                 // Allow matching with any CRC suffix (e.g. /title12345)
-                return new Response(Buffer.from(OnDemand.cache.read(0, 1)!));
+                const data = OnDemand.cache.read(0, 1);
+                if (!data) {
+                    return new Response(null, { status: 404 });
+                }
+                return new Response(Buffer.from(data));
             } else if (url.pathname.startsWith('/config')) {
                 const data = OnDemand.cache.read(0, 2);
                 if (!data) {

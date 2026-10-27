@@ -2269,13 +2269,7 @@ class World {
             const crcs = new Uint8Array(9 * 4);
             World.loginBuf.gdata(crcs, 0, crcs.length);
 
-            // Use ModManager's CRC if available, otherwise fallback to default
-            let expectedCrc = CrcBuffer32;
-            if (ModManager.crcBuffer) {
-                expectedCrc = Packet.getcrc(ModManager.crcBuffer, 0, ModManager.crcBuffer.length);
-            }
-
-            if (expectedCrc !== Packet.getcrc(crcs, 0, crcs.length)) {
+            if (CrcBuffer32 !== Packet.getcrc(crcs, 0, crcs.length)) {
                 client.send(Uint8Array.from([6]));
                 client.close();
                 return;

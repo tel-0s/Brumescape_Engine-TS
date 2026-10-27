@@ -179,6 +179,20 @@ function regenScriptPack(pack: PackFile) {
     pack.load(`${Environment.BUILD_SRC_DIR}/pack/script.pack`);
 
     const names = crawlConfigNames('.rs2', true);
+
+    // Keep the (gitignored) base script.pack to base scripts only: drop names
+    // that no base script defines any more, such as mod scripts that an older
+    // mod loader copied into content/scripts. Mod scripts get their ids in
+    // memory (src/mod/capabilities/scripts.ts). Script ids are not persisted
+    // anywhere else, so dropping stale names is safe.
+    const defined = new Set(names);
+    for (const [id, name] of Array.from(pack.pack.entries())) {
+        if (!defined.has(name)) {
+            pack.pack.delete(id);
+            pack.nameToId.delete(name);
+        }
+    }
+    pack.refreshNames();
     for (let i = 0; i < names.length; i++) {
         if (!pack.names.has(names[i])) {
             pack.register(pack.max++, names[i]);

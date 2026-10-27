@@ -40,5 +40,14 @@
         "ids": {
             "mclabe_oil_texture": 50
         }
+    },
+    "script": {
+        "next": 8342,
+        "ids": {
+            "[opnpc1,jemery_mclabe]": 8338,
+            "[oploc1,olive_oil_barrel]": 8339,
+            "[opheld1,danvids_olive_oil]": 8340,
+            "[debugproc,mclabe_quote]": 8341
+        }
     }
 }

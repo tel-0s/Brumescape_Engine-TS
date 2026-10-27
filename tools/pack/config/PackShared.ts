@@ -27,6 +27,7 @@ import { packVarnConfigs, parseVarnConfig } from '#tools/pack/config/VarnConfig.
 import { packVarpConfigs, parseVarpConfig } from '#tools/pack/config/VarpConfig.js';
 import { packVarsConfigs, parseVarsConfig } from '#tools/pack/config/VarsConfig.js';
 import FileStream from '#/io/FileStream.js';
+import ModManager from '#/mod/ModManager.js';
 
 export function isConfigBoolean(input: string): boolean {
     return input === 'yes' || input === 'no' || input === 'true' || input === 'false' || input === '1' || input === '0';
@@ -138,8 +139,6 @@ export type ConfigPackCallback = (configs: Map<string, ConfigLine[]>, modelFlags
 export type ConfigSaveCallback = (dat: Packet, idx: Packet) => void;
 export type ConfigValidateCallback = (server: Packet, client: Packet) => boolean;
 
-import ModManager from '#/mod/ModManager.js';
-
 export async function readConfigs(dirTree: Set<string>, extension: string, requiredProperties: string[], modelFlags: number[], parse: ConfigParseCallback, pack: ConfigPackCallback, saveClient: ConfigSaveCallback, saveServer: ConfigSaveCallback, validate?: ConfigValidateCallback) {
     const files = findFiles(dirTree, extension);
 
@@ -248,8 +247,8 @@ export async function readConfigs(dirTree: Set<string>, extension: string, requi
         }
     }
 
-    // Inject any mod-provided configs for this type (no-op if none)
-    await ModManager.injectConfigs(extension, configs);
+    // Mod capabilities inject/replace configs of this type (src/mod/capabilities/configs.ts)
+    await ModManager.runConfigHook({ extension, configs, parse, requiredProperties });
 
     const { client, server } = pack(configs, modelFlags);
 
@@ -292,6 +291,9 @@ export async function packConfigs(cache: FileStream, modelFlags: number[]) {
             CONSTANTS.set(name, value);
         }
     });
+
+    // Mod capabilities may add constants before any config is parsed
+    await ModManager.runConstantsHook(CONSTANTS);
 
     // var domains are global, so we need to check for conflicts
     const names = new Set<string>();

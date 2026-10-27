@@ -1,196 +1,389 @@
 import fs from 'fs';
 import path from 'path';
 
-import { printInfo, printError } from '#/util/Logger.js';
-import { EnumPack, HuntPack, IdkPack, InvPack, LocPack, MesAnimPack, ModelPack, NpcPack, ObjPack, ParamPack, SeqPack, SpotAnimPack, StructPack, TexturePack, VarnPack, VarpPack, VarsPack } from '#tools/pack/PackFile.js';
+import { printError, printInfo, printWarning } from '#/util/Logger.js';
 import type { PackFile } from '#tools/pack/PackFileBase.js';
-import { parseEnumConfig } from '#tools/pack/config/EnumConfig.js';
-import { parseHuntConfig } from '#tools/pack/config/HuntConfig.js';
-import { parseIdkConfig } from '#tools/pack/config/IdkConfig.js';
-import { parseInvConfig } from '#tools/pack/config/InvConfig.js';
-import { parseLocConfig } from '#tools/pack/config/LocConfig.js';
-import { parseMesAnimConfig } from '#tools/pack/config/MesAnimConfig.js';
-import { parseNpcConfig } from '#tools/pack/config/NpcConfig.js';
-import { parseObjConfig } from '#tools/pack/config/ObjConfig.js';
-import { parseParamConfig } from '#tools/pack/config/ParamConfig.js';
-import { parseSeqConfig } from '#tools/pack/config/SeqConfig.js';
-import { parseSpotAnimConfig } from '#tools/pack/config/SpotAnimConfig.js';
-import { parseStructConfig } from '#tools/pack/config/StructConfig.js';
-import { parseVarnConfig } from '#tools/pack/config/VarnConfig.js';
-import { parseVarpConfig } from '#tools/pack/config/VarpConfig.js';
-import { parseVarsConfig } from '#tools/pack/config/VarsConfig.js';
-import { ConfigLine, ConfigParseCallback } from '#tools/pack/config/PackShared.js';
+import { Mod } from '#/mod/ModTypes.js';
+import type { ClientStage, CompilerConfig, ConfigHookArgs, ModBuildContext, ModCapability, ModFile, ModManifest } from '#/mod/ModTypes.js';
 
-// Config types a mod may inject via config/<name>.<ext>. Resolved lazily (not
-// in a module-level const) to stay safe against the import cycle between
-// ModManager, the config parsers, and PackShared.
-function injectableType(extension: string): { pack: PackFile; parse: ConfigParseCallback } | null {
-    switch (extension) {
-        case '.npc':
-            return { pack: NpcPack, parse: parseNpcConfig };
-        case '.obj':
-            return { pack: ObjPack, parse: parseObjConfig };
-        case '.loc':
-            return { pack: LocPack, parse: parseLocConfig };
-        case '.seq':
-            return { pack: SeqPack, parse: parseSeqConfig };
-        case '.spotanim':
-            return { pack: SpotAnimPack, parse: parseSpotAnimConfig };
-        case '.idk':
-            return { pack: IdkPack, parse: parseIdkConfig };
-        case '.enum':
-            return { pack: EnumPack, parse: parseEnumConfig };
-        case '.struct':
-            return { pack: StructPack, parse: parseStructConfig };
-        case '.hunt':
-            return { pack: HuntPack, parse: parseHuntConfig };
-        case '.mesanim':
-            return { pack: MesAnimPack, parse: parseMesAnimConfig };
-        case '.varp':
-            return { pack: VarpPack, parse: parseVarpConfig };
-        case '.varn':
-            return { pack: VarnPack, parse: parseVarnConfig };
-        case '.vars':
-            return { pack: VarsPack, parse: parseVarsConfig };
-        case '.param':
-            return { pack: ParamPack, parse: parseParamConfig };
-        case '.inv':
-            return { pack: InvPack, parse: parseInvConfig };
-        default:
-            return null;
+export { Mod } from '#/mod/ModTypes.js';
+export type { ModFile, ModManifest, ModCapability, ModBuildContext } from '#/mod/ModTypes.js';
+
+// Thrown for mod authoring errors. The message names the mod, file and line.
+export class ModError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'ModError';
     }
 }
 
-// Persistent mod ID allocation. Mod-injected config entries get stable IDs
-// recorded in mods/idmap.json so they survive rebuilds and adding/removing other
-// mods (keeping saved player data valid). IDs are assigned contiguously right
-// after base content — NOT in a high reserved range — because the engine packs
-// configs densely AND several systems are sized to the config count (e.g.
-// Player.save writes every varp into a fixed buffer; the client allocates
-// id-indexed arrays). A high id would inflate those counts and overflow them.
+// Persistent mod ID allocation (mods/idmap.json). New names get stable ids so
+// they survive rebuilds and adding/removing other mods (keeping saved player
+// data valid). IDs are assigned contiguously right after base content, NOT in a
+// high reserved range: the engine packs configs densely and several systems
+// are sized to the config count (e.g. Player.save writes every varp into a
+// fixed buffer; the client allocates id-indexed arrays).
 interface IdMapEntry {
     next: number;
     ids: Record<string, number>;
 }
 
-export interface ModConfig {
-    name: string;
-    version: string;
-    author: string;
-    description?: string;
-    dependencies?: Record<string, string>;
-    // Optional [proc,<name>] run once on world boot to place content in the world
-    init?: string;
-}
-
-export class Mod {
-    path: string;
-    config: ModConfig;
-    
-    constructor(dir: string, config: ModConfig) {
-        this.path = dir;
-        this.config = config;
-    }
-
-    async load() {
-        // Check for config overrides (npc, obj, loc, ...)
-        const configDir = path.join(this.path, 'config');
-        if (fs.existsSync(configDir)) {
-            for (const file of fs.readdirSync(configDir)) {
-                if (injectableType(path.extname(file)) !== null) {
-                    this.configFiles.push(path.join(configDir, file));
-                }
-            }
-        }
-
-        // Check for custom models (.ob2)
-        const modelDir = path.join(this.path, 'models');
-        if (fs.existsSync(modelDir)) {
-            for (const file of fs.readdirSync(modelDir)) {
-                if (file.endsWith('.ob2')) {
-                    this.modelFiles.push(path.join(modelDir, file));
-                }
-            }
-        }
-
-        // Check for custom textures (.png)
-        const textureDir = path.join(this.path, 'textures');
-        if (fs.existsSync(textureDir)) {
-            for (const file of fs.readdirSync(textureDir)) {
-                if (file.endsWith('.png')) {
-                    this.textureFiles.push(path.join(textureDir, file));
-                }
-            }
-        }
-
-        // Check for scripts
-        const scriptDir = path.join(this.path, 'scripts');
-        if (fs.existsSync(scriptDir)) {
-            // We need to tell the system to include these scripts
-            this.scriptPath = scriptDir;
-        }
-    }
-
-    // Absolute paths of injectable config files found in this mod's config/ dir
-    configFiles: string[] = [];
-    // Absolute paths of custom .ob2 model files in this mod's models/ dir
-    modelFiles: string[] = [];
-    // Absolute paths of custom .png texture files in this mod's textures/ dir
-    textureFiles: string[] = [];
-    scriptPath: string | null = null;
-}
+type HookName = 'prepare' | 'beforeRevalidate' | 'afterRevalidate' | 'beforeSymbols' | 'afterSymbols' | 'afterCompile';
 
 class ModManager {
+    // Enabled mods in load order
     mods: Mod[] = [];
     modsDir: string = 'mods';
-    
-    // Persisted name -> id assignments per config type (mods/idmap.json)
-    idMap: Record<string, IdMapEntry> | null = null;
-    idMapDirty = false;
 
-    // Custom texture name -> directory holding its <name>.png (for the packer)
-    modTextureDirs: Map<string, string> = new Map();
+    // Registered capability modules, in registration order
+    readonly capabilities: ModCapability[] = [];
+    private capabilitiesLoaded = false;
+
+    // Context of the build in progress (null outside packClient/packServer)
+    ctx: ModBuildContext | null = null;
+
+    // Persisted name -> id assignments per kind (mods/idmap.json)
+    private idMap: Record<string, IdMapEntry> | null = null;
+    private idMapDirty = false;
+
+    // Per-build state, reset by beginBuild()
+    private claims: Map<string, Map<string, ModFile>> = new Map();
+    private assets: Map<string, Map<string, string>> = new Map();
 
     get idMapPath(): string {
         return path.join(this.modsDir, 'idmap.json');
     }
 
+    // ------------------------------------------------------------------------
+    // Discovery
+
     async init() {
         if (!fs.existsSync(this.modsDir)) {
-            fs.mkdirSync(this.modsDir);
+            fs.mkdirSync(this.modsDir, { recursive: true });
         }
-        await this.loadMods();
+
+        this.loadMods();
+        await this.loadCapabilities();
     }
 
-    async loadMods() {
-        if (!fs.existsSync(this.modsDir)) return;
-        // Reset first so repeated loads (e.g. on ::rebuild, which re-runs
-        // ModManager.init) replace the list instead of appending duplicates.
+    private loadMods() {
+        // Reset first so repeated loads (::rebuild re-runs init) replace the
+        // list instead of appending duplicates.
         this.mods = [];
-        const entries = fs.readdirSync(this.modsDir, { withFileTypes: true });
-        
-        for (const entry of entries) {
-            if (entry.isDirectory()) {
-                const modPath = path.join(this.modsDir, entry.name);
-                const configPath = path.join(modPath, 'mod.json');
+        this.idMap = null;
 
-                if (fs.existsSync(configPath)) {
-                    try {
-                        const config = JSON.parse(fs.readFileSync(configPath, 'utf-8')) as ModConfig;
-                        const mod = new Mod(modPath, config);
-                        await mod.load();
-                        this.mods.push(mod);
-                        printInfo(`Loaded mod: ${config.name} v${config.version}`);
-                    } catch (err) {
-                        printError(`Failed to load mod at ${modPath}: ${err}`);
-                    }
-                }
+        const entries = fs.readdirSync(this.modsDir, { withFileTypes: true });
+        for (const entry of entries) {
+            if (!entry.isDirectory()) {
+                continue;
+            }
+
+            const dir = path.resolve(this.modsDir, entry.name);
+            const manifestPath = path.join(dir, 'mod.json');
+            if (!fs.existsSync(manifestPath)) {
+                continue;
+            }
+
+            try {
+                const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) as ModManifest;
+                const mod = new Mod(dir, manifest);
+                this.mods.push(mod);
+                printInfo(`Loaded mod: ${mod.name} v${manifest.version}`);
+            } catch (err) {
+                printError(`Failed to load mod at ${dir}: ${err}`);
             }
         }
     }
 
-    loadIdMap() {
-        if (this.idMap) return;
+    private async loadCapabilities() {
+        if (this.capabilitiesLoaded) {
+            return;
+        }
+        this.capabilitiesLoaded = true;
+        // Imported lazily: capability modules import tools/pack code, which in
+        // turn imports this module.
+        await import('#/mod/capabilities/index.js');
+    }
+
+    // Called once per capability from src/mod/capabilities/index.ts
+    register(capability: ModCapability) {
+        if (this.capabilities.some(c => c.name === capability.name)) {
+            throw new Error(`Mod capability '${capability.name}' is registered twice`);
+        }
+        this.capabilities.push(capability);
+    }
+
+    // ------------------------------------------------------------------------
+    // Build lifecycle (called by tools/pack/PackAll.ts)
+
+    async beginBuild(modelFlags: number[]): Promise<ModBuildContext> {
+        await this.init();
+
+        this.claims.clear();
+        this.assets.clear();
+
+        this.ctx = {
+            mods: this.mods,
+            modelFlags,
+            cache: null,
+            forceRebuild: false
+        };
+
+        await this.runHook('prepare');
+        return this.ctx;
+    }
+
+    finishBuild() {
+        this.saveIdMap();
+        this.ctx = null;
+    }
+
+    // ------------------------------------------------------------------------
+    // Hook dispatch
+
+    private requireCtx(): ModBuildContext {
+        if (!this.ctx) {
+            throw new Error('Mod build hooks can only run during a build (call ModManager.beginBuild first)');
+        }
+        return this.ctx;
+    }
+
+    async runHook(name: HookName) {
+        const ctx = this.requireCtx();
+        for (const cap of this.capabilities) {
+            const hook = cap[name];
+            if (hook) {
+                await hook(ctx);
+            }
+        }
+    }
+
+    // Runs before:<stage> hooks, the stage itself, then after:<stage> hooks.
+    async runStage(stage: ClientStage, fn: () => void | Promise<void>) {
+        const ctx = this.requireCtx();
+        for (const cap of this.capabilities) {
+            const hook = cap.before?.[stage];
+            if (hook) {
+                await hook(ctx);
+            }
+        }
+
+        await fn();
+
+        for (const cap of this.capabilities) {
+            const hook = cap.after?.[stage];
+            if (hook) {
+                await hook(ctx);
+            }
+        }
+    }
+
+    async runConstantsHook(constants: Map<string, string>) {
+        // packConfigs may run outside a mod build (tooling); nothing to add then
+        if (!this.ctx) {
+            return;
+        }
+        for (const cap of this.capabilities) {
+            if (cap.constants) {
+                await cap.constants(this.ctx, constants);
+            }
+        }
+    }
+
+    async runConfigHook(args: ConfigHookArgs) {
+        if (!this.ctx) {
+            return;
+        }
+        for (const cap of this.capabilities) {
+            if (cap.configs) {
+                await cap.configs(this.ctx, args);
+            }
+        }
+    }
+
+    async runCompileHook(compiler: CompilerConfig) {
+        const ctx = this.requireCtx();
+        for (const cap of this.capabilities) {
+            if (cap.beforeCompile) {
+                await cap.beforeCompile(ctx, compiler);
+            }
+        }
+    }
+
+    // Called from World.start() in the server process
+    async runWorldBoot(world: Parameters<NonNullable<ModCapability['worldBoot']>>[0]) {
+        if (!this.capabilitiesLoaded) {
+            await this.init();
+        }
+        for (const cap of this.capabilities) {
+            if (!cap.worldBoot) {
+                continue;
+            }
+            try {
+                await cap.worldBoot(world);
+            } catch (err) {
+                printError(`[mods] ${cap.name}: world boot failed: ${err instanceof Error ? err.message : err}`);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------
+    // Shared API for capability modules
+
+    // Every file under <mod>/<subdir>/ (recursively) with one of the given
+    // extensions, for each enabled mod in load order. Within a mod, files are
+    // sorted by path. Dotfiles and dot-directories are skipped.
+    listFiles(subdir: string, exts: string | readonly string[], options: { recursive?: boolean } = {}): ModFile[] {
+        const wanted = (typeof exts === 'string' ? [exts] : exts).map(e => e.toLowerCase());
+        const recursive = options.recursive ?? true;
+        const out: ModFile[] = [];
+
+        for (const mod of this.mods) {
+            const root = path.join(mod.dir, subdir);
+            if (!fs.existsSync(root)) {
+                continue;
+            }
+
+            const found: string[] = [];
+            walk(root, recursive, found);
+            found.sort();
+
+            for (const file of found) {
+                const ext = path.extname(file).toLowerCase();
+                if (!wanted.includes(ext)) {
+                    continue;
+                }
+
+                out.push({
+                    mod,
+                    path: file,
+                    relPath: toPosix(path.relative(mod.dir, file)),
+                    subPath: toPosix(path.relative(root, file)),
+                    name: path.basename(file, path.extname(file)),
+                    ext
+                });
+            }
+        }
+
+        return out;
+    }
+
+    // Stable id for a new name of the given kind ('npc', 'model', 'script', ...).
+    // Reuses the id recorded in idmap.json; otherwise assigns the next id after
+    // base content and earlier mod ids. If base content now occupies the
+    // recorded id with a different name, the name is reassigned (and logged).
+    assignId(kind: string, pack: PackFile, name: string): number {
+        this.loadIdMap();
+
+        let entry = this.idMap![kind];
+        if (!entry) {
+            entry = { next: 0, ids: {} };
+            this.idMap![kind] = entry;
+            this.idMapDirty = true;
+        }
+
+        let id = entry.ids[name];
+        const occupant = id !== undefined ? pack.pack.get(id) : undefined;
+        if (id === undefined || (occupant !== undefined && occupant !== name)) {
+            if (id !== undefined) {
+                printError(`[mods] ${kind} id ${id} (${name}) is already used by '${occupant}' (base content changed?). Reassigning.`);
+            }
+            id = Math.max(pack.max, entry.next);
+            entry.ids[name] = id;
+            this.idMapDirty = true;
+        }
+
+        if (id + 1 > entry.next) {
+            entry.next = id + 1;
+            this.idMapDirty = true;
+        }
+
+        return id;
+    }
+
+    // Register a mod name into a PackFile and return its id. If the name
+    // already exists (base content, or an earlier mod) its id is returned
+    // unchanged; otherwise a stable id is assigned (assignId) and the name is
+    // registered as mod-owned, which keeps it out of content/pack/*.pack.
+    registerName(kind: string, pack: PackFile, name: string): number {
+        const existing = pack.getByName(name);
+        if (existing !== -1) {
+            return existing;
+        }
+
+        const id = this.assignId(kind, pack, name);
+        pack.registerMod(id, name);
+        printInfo(`[mods] Registered ${kind} ${name} (ID: ${id})`);
+        return id;
+    }
+
+    // True if the name belongs to base content (not registered by a mod)
+    isBaseName(pack: PackFile, name: string): boolean {
+        return pack.getByName(name) !== -1 && !pack.modNames.has(name);
+    }
+
+    // Record that `file` defines `name` of `kind`. Returns the previous
+    // definition (if any). When it came from another mod, the override is
+    // logged; later mods in load order win. A second definition in the SAME
+    // mod is returned too; callers decide whether that is an error.
+    claim(kind: string, name: string, file: ModFile): ModFile | null {
+        let byName = this.claims.get(kind);
+        if (!byName) {
+            byName = new Map();
+            this.claims.set(kind, byName);
+        }
+
+        const previous = byName.get(name) ?? null;
+        byName.set(name, file);
+
+        if (previous && previous.mod !== file.mod) {
+            printWarning(`[mods] ${kind} '${name}' from ${previous.mod.name} (${previous.relPath}) is overridden by ${file.mod.name} (${file.relPath})`);
+        }
+
+        return previous;
+    }
+
+    // Asset overrides: the absolute path of the mod file that replaces or adds
+    // asset `name` of `kind` (e.g. setAsset('texture', 'bark', '/.../bark.png')).
+    // Base packers call getAsset() and fall back to base content.
+    setAsset(kind: string, name: string, absPath: string) {
+        let byName = this.assets.get(kind);
+        if (!byName) {
+            byName = new Map();
+            this.assets.set(kind, byName);
+        }
+        byName.set(name, absPath);
+    }
+
+    getAsset(kind: string, name: string): string | undefined {
+        return this.assets.get(kind)?.get(name);
+    }
+
+    // Engine-local, gitignored scratch space for mod build products
+    // (data/pack/mods/<sub>). Never write mod data into the content dir.
+    stagingDir(sub: string = ''): string {
+        const dir = path.resolve('data/pack/mods', sub);
+        fs.mkdirSync(dir, { recursive: true });
+        return dir;
+    }
+
+    // A mod authoring error: '[mod <name>] <relPath>:<line>: <message>'.
+    // `line` is 1-based; pass null when there is no meaningful line.
+    error(where: ModFile | Mod, line: number | null, message: string): ModError {
+        return new ModError(formatLocation(where, line) + message);
+    }
+
+    warn(where: ModFile | Mod, line: number | null, message: string) {
+        printWarning(formatLocation(where, line) + message);
+    }
+
+    // ------------------------------------------------------------------------
+    // idmap persistence
+
+    private loadIdMap() {
+        if (this.idMap) {
+            return;
+        }
         if (fs.existsSync(this.idMapPath)) {
             this.idMap = JSON.parse(fs.readFileSync(this.idMapPath, 'utf-8')) as Record<string, IdMapEntry>;
         } else {
@@ -199,181 +392,39 @@ class ModManager {
     }
 
     saveIdMap() {
-        if (!this.idMap || !this.idMapDirty) return;
+        if (!this.idMap || !this.idMapDirty) {
+            return;
+        }
         fs.writeFileSync(this.idMapPath, JSON.stringify(this.idMap, null, 4) + '\n');
         this.idMapDirty = false;
     }
+}
 
-    // Assign a stable ID to a newly-injected config entry, reusing the persisted
-    // ID when present. Guards against an ID already claimed by base content.
-    assignId(extension: string, pack: PackFile, name: string): number {
-        this.loadIdMap();
-        const key = extension.slice(1); // '.npc' -> 'npc'
+function toPosix(p: string): string {
+    return p.split(path.sep).join('/');
+}
 
-        let entry = this.idMap![key];
-        if (!entry) {
-            entry = { next: 0, ids: {} };
-            this.idMap![key] = entry;
-            this.idMapDirty = true;
+function walk(dir: string, recursive: boolean, out: string[]) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (entry.name.startsWith('.')) {
+            continue;
         }
-
-        let id = entry.ids[name];
-        const occupant = id !== undefined ? pack.pack.get(id) : undefined;
-        if (id === undefined || (occupant !== undefined && occupant !== name)) {
-            if (id !== undefined) {
-                printError(`[ModManager] ${key} id ${id} (${name}) is already used by '${occupant}' (base content changed?). Reassigning.`);
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+            if (recursive) {
+                walk(full, recursive, out);
             }
-            // Assign contiguously, right after base content / prior mod entries
-            id = Math.max(pack.max, entry.next);
-            entry.ids[name] = id;
-            this.idMapDirty = true;
+        } else if (entry.isFile()) {
+            out.push(full);
         }
-        if (id + 1 > entry.next) {
-            entry.next = id + 1;
-            this.idMapDirty = true;
-        }
-        return id;
     }
+}
 
-    // Hook into config packing to inject mod-provided configs of a given type.
-    // Mirrors the parse loop in readConfigs (PackShared) but registers any new
-    // names into the in-memory Pack so they receive an ID and flow through both
-    // packing and symbol generation. No-op for non-injectable types or when no
-    // mod provides that type.
-    async injectConfigs(extension: string, configs: Map<string, ConfigLine[]>) {
-        const type = injectableType(extension);
-        if (!type) {
-            return;
-        }
-
-        if (this.mods.length === 0) {
-            // Ensure mods are loaded if injection runs before init()
-            if (!fs.existsSync(this.modsDir)) return;
-            await this.loadMods();
-        }
-
-        for (const mod of this.mods) {
-            for (const file of mod.configFiles) {
-                if (path.extname(file) !== extension) {
-                    continue;
-                }
-
-                const lines = fs.readFileSync(file, 'utf-8').split(/\r?\n/);
-
-                let debugname: string | null = null;
-                let config: ConfigLine[] = [];
-
-                const flush = () => {
-                    if (debugname === null) {
-                        return;
-                    }
-
-                    configs.set(debugname, config);
-
-                    // nameToId is the authoritative id<->name map (register()
-                    // updates it; the names Set is not), so use it to tell a
-                    // brand-new entry apart from an override of base content.
-                    if (!type.pack.nameToId.has(debugname)) {
-                        const id = this.assignId(extension, type.pack, debugname);
-                        type.pack.register(id, debugname);
-                        // Dense packers loop 0..Pack.max, so max must cover a high id
-                        if (id + 1 > type.pack.max) {
-                            type.pack.max = id + 1;
-                        }
-                        printInfo(`[ModManager] Registered ${extension} ${debugname} (ID: ${id})`);
-                    } else {
-                        printInfo(`[ModManager] Overriding ${extension} ${debugname}`);
-                    }
-                };
-
-                for (let line of lines) {
-                    line = line.trim();
-                    if (line.length === 0 || line.startsWith('//')) continue;
-
-                    if (line.startsWith('[')) {
-                        flush();
-                        debugname = line.substring(1, line.length - 1);
-                        config = [];
-                        continue;
-                    }
-
-                    const separator = line.indexOf('=');
-                    if (separator === -1) continue;
-
-                    const key = line.substring(0, separator);
-                    const value = line.substring(separator + 1);
-                    const parsed = type.parse(key, value);
-                    if (parsed !== null && parsed !== undefined) {
-                        config.push({ key, value: parsed });
-                    }
-                }
-
-                flush();
-            }
-        }
-
-        this.saveIdMap();
+function formatLocation(where: ModFile | Mod, line: number | null): string {
+    if (where instanceof Mod) {
+        return `[mod ${where.name}] `;
     }
-
-    // Register each mod's custom .ob2 model names into ModelPack with stable ids
-    // (idmap key 'model'), so config model refs resolve and they get packed into
-    // the cache + versionlist. Must run AFTER revalidatePack() (which resets the
-    // Packs) and BEFORE configs are packed (which resolve model names to ids).
-    async registerModModels() {
-        if (this.mods.length === 0) {
-            if (!fs.existsSync(this.modsDir)) return;
-            await this.loadMods();
-        }
-
-        for (const mod of this.mods) {
-            for (const file of mod.modelFiles) {
-                const name = path.basename(file, path.extname(file));
-                if (ModelPack.nameToId.has(name)) {
-                    continue;
-                }
-                const id = this.assignId('.model', ModelPack, name);
-                ModelPack.register(id, name);
-                // Dense packers/versionlist loop 0..ModelPack.max
-                if (id + 1 > ModelPack.max) {
-                    ModelPack.max = id + 1;
-                }
-                printInfo(`[ModManager] Registered model ${name} (ID: ${id})`);
-            }
-        }
-
-        this.saveIdMap();
-    }
-
-    // Register each mod's custom .png textures into TexturePack with stable ids
-    // (idmap key 'texture', contiguous after the 50 base textures). Records the
-    // source dir per name so packClientTexture can convertImage from the mod dir.
-    // Must run after revalidatePack() and before packClientTexture().
-    async registerModTextures() {
-        if (this.mods.length === 0) {
-            if (!fs.existsSync(this.modsDir)) return;
-            await this.loadMods();
-        }
-
-        this.modTextureDirs.clear();
-
-        for (const mod of this.mods) {
-            for (const file of mod.textureFiles) {
-                const name = path.basename(file, path.extname(file));
-                this.modTextureDirs.set(name, path.dirname(file));
-                if (TexturePack.nameToId.has(name)) {
-                    continue;
-                }
-                const id = this.assignId('.texture', TexturePack, name);
-                TexturePack.register(id, name);
-                if (id + 1 > TexturePack.max) {
-                    TexturePack.max = id + 1;
-                }
-                printInfo(`[ModManager] Registered texture ${name} (ID: ${id})`);
-            }
-        }
-
-        this.saveIdMap();
-    }
+    return `[mod ${where.mod.name}] ${where.relPath}${line !== null ? `:${line}` : ''}: `;
 }
 
 export default new ModManager();

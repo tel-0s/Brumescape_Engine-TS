@@ -1,11 +1,9 @@
 // stdlib
 import fs from 'fs';
-import path from 'path';
 import { Worker as NodeWorker } from 'worker_threads';
 
 // deps
 import * as rsbuf from '@2004scape/rsbuf';
-import { LocAngle, LocShape } from '@2004scape/rsmod-pathfinder';
 import { PlayerInfoProt } from '@2004scape/rsbuf';
 import kleur from 'kleur';
 import forge from 'node-forge';
@@ -316,102 +314,6 @@ class World {
         makeCrcs();
     }
 
-    // Parse a "level_mapx_mapz_localx_localz" spawn coord into absolute coords.
-    private parseModCoord(coord: string): { level: number; x: number; z: number } | null {
-        const parts = coord.split('_').map(n => parseInt(n, 10));
-        if (parts.length !== 5 || parts.some(n => Number.isNaN(n))) {
-            return null;
-        }
-        const [level, mx, mz, lx, lz] = parts;
-        if (level < 0 || level > 3 || mx < 0 || mx > 255 || mz < 0 || mz > 255 || lx < 0 || lx > 63 || lz < 0 || lz > 63) {
-            return null;
-        }
-        return { level, x: (mx << 6) + lx, z: (mz << 6) + lz };
-    }
-
-    // Place each mod's declarative spawns (mods/<mod>/spawns.json) into the world
-    // as RESPAWN entities on boot, mirroring how the base game loads map spawns —
-    // so modded NPCs respawn after death and locs persist/revert like static ones.
-    private runModSpawns(): void {
-        for (const mod of ModManager.mods) {
-            const file = path.join(mod.path, 'spawns.json');
-            if (!fs.existsSync(file)) {
-                continue;
-            }
-
-            let manifest: { npcs?: { id: string; coord: string }[]; locs?: { id: string; coord: string; shape?: number; angle?: number }[] };
-            try {
-                manifest = JSON.parse(fs.readFileSync(file, 'utf-8'));
-            } catch (err) {
-                printError(`[ModManager] ${mod.config.name}: invalid spawns.json: ${err}`);
-                continue;
-            }
-
-            let npcCount = 0;
-            let locCount = 0;
-
-            for (const spawn of manifest.npcs ?? []) {
-                const at = this.parseModCoord(spawn.coord);
-                const type = NpcType.getByName(spawn.id);
-                if (!at || !type) {
-                    printError(`[ModManager] ${mod.config.name}: bad npc spawn (id='${spawn.id}', coord='${spawn.coord}')`);
-                    continue;
-                }
-                const npc = new Npc(at.level, at.x, at.z, type.size, type.size, EntityLifeCycle.RESPAWN, this.getNextNid(), type.id, type.moverestrict, type.blockwalk);
-                this.addNpc(npc, -1);
-                npcCount++;
-            }
-
-            for (const spawn of manifest.locs ?? []) {
-                const at = this.parseModCoord(spawn.coord);
-                const type = LocType.getByName(spawn.id);
-                if (!at || !type) {
-                    printError(`[ModManager] ${mod.config.name}: bad loc spawn (id='${spawn.id}', coord='${spawn.coord}')`);
-                    continue;
-                }
-                const shape = spawn.shape ?? LocShape.CENTREPIECE_STRAIGHT;
-                const angle = spawn.angle ?? LocAngle.WEST;
-                // Mod locs aren't in the client's downloaded map data, so a static
-                // loc would never render. Add as a dynamic (DESPAWN) loc via addLoc,
-                // which broadcasts it and delivers it to players entering the zone
-                // later; duration -1 keeps it untracked = permanent. (addLoc handles
-                // collision internally.)
-                this.addLoc(new Loc(at.level, at.x, at.z, type.width, type.length, EntityLifeCycle.DESPAWN, type.id, shape, angle), -1);
-                locCount++;
-            }
-
-            if (npcCount || locCount) {
-                printInfo(`[ModManager] ${mod.config.name}: spawned ${npcCount} npc(s), ${locCount} loc(s)`);
-            }
-        }
-    }
-
-    // Run each loaded mod's init proc (mod.json "init" field) once on world boot,
-    // after scripts are loaded and the map is ready. Lets mods place NPCs/locs via
-    // npc_add/loc_add. Re-runs every boot, so placement is idempotent without
-    // needing to persist spawned entities.
-    private runModInit(): void {
-        for (const mod of ModManager.mods) {
-            const procName = mod.config.init;
-            if (!procName) {
-                continue;
-            }
-
-            const script = ScriptProvider.getByName(`[proc,${procName}]`);
-            if (!script) {
-                printError(`[ModManager] ${mod.config.name}: init proc [proc,${procName}] not found`);
-                continue;
-            }
-
-            try {
-                ScriptRunner.execute(ScriptRunner.init(script, null, null, []));
-                printInfo(`[ModManager] Ran init for ${mod.config.name}`);
-            } catch (err) {
-                printError(`[ModManager] ${mod.config.name} init failed: ${err}`);
-            }
-        }
-    }
-
     async start(skipMaps = false, startCycle = true): Promise<void> {
         printInfo('Starting world');
 
@@ -425,8 +327,8 @@ class World {
                 this.gameMap.init();
             }
 
-            this.runModSpawns();
-            this.runModInit();
+            // mod capabilities: spawns.json, mod.json "init" procs, ...
+            await ModManager.runWorldBoot(this);
         }
 
         setTimeout(() => {

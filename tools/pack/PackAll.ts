@@ -6,7 +6,6 @@ import { parentPort } from 'worker_threads';
 import * as fflate from 'fflate';
 
 import Environment from '#/util/Environment.js';
-import { compressGz } from '#/io/GZip.js';
 import { ModelPack, revalidatePack } from '#tools/pack/PackFile.js';
 import { packClientWordenc } from '#tools/pack/chat/pack.js';
 import { packConfigs } from '#tools/pack/config/PackShared.js';
@@ -25,9 +24,14 @@ import { clearFsCache } from '#tools/pack/FsCache.js';
 import Packet from '#/io/Packet.js';
 
 import ModManager from '#/mod/ModManager.js';
+import type { CompilerConfig } from '#/mod/ModTypes.js';
 
+// Mod capabilities hook into this pipeline (src/mod/README.md):
+//   prepare -> beforeRevalidate -> revalidatePack -> afterRevalidate
+//   -> before:<stage> / <stage> / after:<stage> for each client stage
+//   -> beforeSymbols -> symbols -> afterSymbols -> beforeCompile -> compile -> afterCompile
 export async function packClient(modelFlags: number[]) {
-    await injectModScripts();
+    const ctx = await ModManager.beginBuild(modelFlags);
 
     if (parentPort) {
         parentPort.postMessage({
@@ -37,32 +41,32 @@ export async function packClient(modelFlags: number[]) {
     }
 
     clearFsCache();
+    await ModManager.runHook('beforeRevalidate');
     revalidatePack();
-
-    // Register mod custom models/textures into their Packs (after revalidatePack
-    // reset them, before configs resolve names and before the modelFlags sizing).
-    await ModManager.registerModModels();
-    await ModManager.registerModTextures();
+    // Mods register their names/ids here (after revalidatePack reset the Packs,
+    // before configs resolve names and before the modelFlags sizing).
+    await ModManager.runHook('afterRevalidate');
 
     for (let i = 0; i < ModelPack.max; i++) {
         modelFlags[i] = 0;
     }
 
     const cache = new FileStream('data/pack', true);
+    ctx.cache = cache;
 
-    await packClientTitle(cache);
-    await packConfigs(cache, modelFlags);
-    packClientInterface(cache, modelFlags);
-    await packClientMedia(cache);
-    await packClientTexture(cache);
+    await ModManager.runStage('title', () => packClientTitle(cache));
+    await ModManager.runStage('configs', () => packConfigs(cache, modelFlags));
+    await ModManager.runStage('interface', () => packClientInterface(cache, modelFlags));
+    await ModManager.runStage('media', () => packClientMedia(cache));
+    await ModManager.runStage('textures', () => packClientTexture(cache));
+    await ModManager.runStage('wordenc', () => packClientWordenc(cache));
+    await ModManager.runStage('sound', () => packClientSound(cache));
+    await ModManager.runStage('models', () => packClientModel(cache, modelFlags));
+    await ModManager.runStage('maps', () => packMaps(cache));
+    await ModManager.runStage('music', () => packClientMusic(cache));
+    await ModManager.runStage('versionlist', () => packClientVersionList(cache, modelFlags));
 
-    packClientWordenc(cache);
-    packClientSound(cache);
-    packModModels(cache);
-    packClientModel(cache, modelFlags);
-    packMaps(cache);
-    packClientMusic(cache);
-    packClientVersionList(cache, modelFlags);
+    ctx.cache = null;
 
     const build = Packet.alloc(0);
     build.p4(Date.now() / 1000);
@@ -91,62 +95,25 @@ export async function packClient(modelFlags: number[]) {
     }
 }
 
-// Write each mod's custom .ob2 models into cache archive 1 at their registered
-// id (assigned by ModManager.registerModModels). The versionlist step then picks
-// them up since it loops 0..ModelPack.max.
-function packModModels(cache: FileStream) {
-    for (const mod of ModManager.mods) {
-        for (const file of mod.modelFiles) {
-            const name = path.basename(file, path.extname(file));
-            const id = ModelPack.getByName(name);
-            if (id === -1) {
-                continue;
-            }
-            const data = fs.readFileSync(file);
-            if (data.length) {
-                cache.write(1, id, compressGz(data)!, 1);
-            }
-        }
-    }
+// TOML basic strings accept JSON string escapes
+function tomlString(value: string): string {
+    return JSON.stringify(value);
 }
 
-async function injectModScripts() {
-    // Inject mod scripts into the build list
-    const modScriptDir = `${Environment.BUILD_SRC_DIR}/scripts/_mods`;
-    if (fs.existsSync(modScriptDir)) {
-        fs.rmSync(modScriptDir, { recursive: true, force: true });
-    }
-    
-    await ModManager.init();
-
-    for (const mod of ModManager.mods) {
-        if (mod.scriptPath) {
-            if (!fs.existsSync(modScriptDir)) {
-                fs.mkdirSync(modScriptDir, { recursive: true });
-            }
-            
-            const files = fs.readdirSync(mod.scriptPath);
-            for (const file of files) {
-                if (file.endsWith('.rs2')) {
-                    fs.copyFileSync(path.join(mod.scriptPath, file), path.join(modScriptDir, file));
-                }
-            }
-        }
-    }
-
-    // shouldBuild() only tracks base content + tool mtimes, so it would skip a
-    // config type that only a mod changed and the injection (which happens
-    // inside readConfigs) would never run. Invalidate the cached server .dat for
-    // every config type a mod provides, forcing that type to repack and thus
-    // re-run injection + symbol generation. Works for any future type too.
-    for (const mod of ModManager.mods) {
-        for (const file of mod.configFiles) {
-            const dat = `data/pack/server/${path.extname(file).slice(1)}.dat`;
-            if (fs.existsSync(dat)) {
-                fs.rmSync(dat);
-            }
-        }
-    }
+function writeCompilerConfig(compiler: CompilerConfig, file: string) {
+    const list = (values: string[]) => `[${values.map(tomlString).join(', ')}]`;
+    const toml = [
+        '# Generated by tools/pack/PackAll.ts for each build. Do not edit.',
+        `sources = ${list(compiler.sources)}`,
+        `symbols = ${list(compiler.symbols)}`,
+        `excluded = ${list(compiler.excluded)}`,
+        `check_pointers = ${compiler.checkPointers}`,
+        '',
+        '[writer.binary]',
+        `output = ${tomlString(compiler.output)}`,
+        ''
+    ].join('\n');
+    fs.writeFileSync(file, toml);
 }
 
 export async function packServer() {
@@ -161,7 +128,9 @@ export async function packServer() {
         });
     }
 
+    await ModManager.runHook('beforeSymbols');
     await generateServerSymbols();
+    await ModManager.runHook('afterSymbols');
 
     if (parentPort) {
         parentPort.postMessage({
@@ -170,13 +139,29 @@ export async function packServer() {
         });
     }
 
+    // The compiler config is generated per build (neptune.toml in the engine
+    // root is kept for running the compiler by hand on base content).
+    const compiler: CompilerConfig = {
+        sources: [path.resolve(Environment.BUILD_SRC_DIR, 'scripts')],
+        excluded: [],
+        symbols: [path.resolve('data/symbols')],
+        output: path.resolve('data/pack/server'),
+        checkPointers: true
+    };
+    await ModManager.runCompileHook(compiler);
+    const compilerConfig = path.join(ModManager.stagingDir(), 'neptune.toml');
+    writeCompilerConfig(compiler, compilerConfig);
+
     try {
-        child_process.execSync(`"${Environment.BUILD_JAVA_PATH}" -jar RuneScriptCompiler.jar`, { stdio: 'inherit' });
+        child_process.execSync(`"${Environment.BUILD_JAVA_PATH}" -jar RuneScriptCompiler.jar "${compilerConfig}"`, { stdio: 'inherit' });
     } catch (_err) {
         // Always surface a compiler failure so the build exits non-zero, even
         // when not running inside a dev worker (parentPort === null).
         throw new Error('Failed to compile scripts.');
     }
+
+    await ModManager.runHook('afterCompile');
+    ModManager.finishBuild();
 
     if (parentPort) {
         parentPort.postMessage({

@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 
 import FileStream from '#/io/FileStream.js';
 import Packet from '#/io/Packet.js';
@@ -11,12 +12,14 @@ import ModManager from '#/mod/ModManager.js';
 export async function packClientTexture(cache: FileStream) {
     const index = Packet.alloc(3);
 
-    // Base textures live in content/textures; mod textures (ids >= 50) come from
-    // the mod's own textures/ dir. Loop to TexturePack.max so injected ones pack.
+    // Base textures live in content/textures; a mod texture (new, or replacing
+    // a base one) comes from the mod (src/mod/capabilities/textures.ts). Loop to
+    // TexturePack.max so injected ones pack.
     const all = [];
     for (let id = 0; id < TexturePack.max; id++) {
         const name = TexturePack.getById(id);
-        const dir = ModManager.modTextureDirs.get(name) ?? `${Environment.BUILD_SRC_DIR}/textures`;
+        const override = ModManager.getAsset('texture', name);
+        const dir = override ? path.dirname(override) : `${Environment.BUILD_SRC_DIR}/textures`;
         all.push(await convertImage(index, dir, name));
     }
 

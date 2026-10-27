@@ -86,7 +86,7 @@ export async function generateServerSymbols() {
     // their symbols from the in-memory Pack (id -> name), falling back to disk.
     // (Typed configs like varp/varn/vars/param/inv are not yet injectable
     // because their symbol files carry extra type/protect columns.)
-    const { NpcPack, ObjPack, LocPack, SeqPack, SpotAnimPack, IdkPack, EnumPack, StructPack, HuntPack, MesAnimPack, VarpPack, VarnPack, VarsPack, ParamPack, InvPack } = await import('#tools/pack/PackFile.js');
+    const { NpcPack, ObjPack, LocPack, SeqPack, SpotAnimPack, IdkPack, EnumPack, StructPack, HuntPack, MesAnimPack, VarpPack, VarnPack, VarsPack, ParamPack, InvPack, ScriptPack } = await import('#tools/pack/PackFile.js');
     fs.writeFileSync('data/symbols/npc.sym', symbolsFromPack(NpcPack, `${Environment.BUILD_SRC_DIR}/pack/npc.pack`));
     fs.writeFileSync('data/symbols/obj.sym', symbolsFromPack(ObjPack, `${Environment.BUILD_SRC_DIR}/pack/obj.pack`));
     fs.writeFileSync('data/symbols/loc.sym', symbolsFromPack(LocPack, `${Environment.BUILD_SRC_DIR}/pack/loc.pack`));
@@ -181,16 +181,8 @@ export async function generateServerSymbols() {
     }
     fs.writeFileSync('data/symbols/category.sym', categorySymbols);
 
-    let scriptSymbols = '';
-    const scripts = loadPack(`${Environment.BUILD_SRC_DIR}/pack/script.pack`);
-    for (let i = 0; i < scripts.length; i++) {
-        if (!scripts[i]) {
-            continue;
-        }
-
-        scriptSymbols += `${i}\t${scripts[i]}\n`;
-    }
-    fs.writeFileSync('data/symbols/runescript.sym', scriptSymbols);
+    // in-memory ScriptPack: base content/pack/script.pack plus mod script names
+    fs.writeFileSync('data/symbols/runescript.sym', symbolsFromPack(ScriptPack, `${Environment.BUILD_SRC_DIR}/pack/script.pack`));
 
     let commandSymbols = '';
     const commands = Array.from(ScriptOpcodeMap.entries())

@@ -11,6 +11,7 @@ import { EntityLifeCycle } from '#/engine/entity/EntityLifeCycle.js';
 import Loc from '#/engine/entity/Loc.js';
 import Npc from '#/engine/entity/Npc.js';
 import Obj from '#/engine/entity/Obj.js';
+import { readMapCsv } from '#/engine/MapCsv.js';
 import World from '#/engine/World.js';
 import Zone from '#/engine/zone/Zone.js';
 import ZoneGrid from '#/engine/zone/ZoneGrid.js';
@@ -48,8 +49,9 @@ export default class GameMap {
     init(): void {
         printDebug('Loading game map');
 
-        this.loadCsvMap(this.multimap, fs.readFileSync(`${Environment.BUILD_SRC_DIR}/maps/multiway.csv`, 'ascii').replace(/\r/g, '').split('\n'));
-        this.loadCsvMap(this.freemap, fs.readFileSync(`${Environment.BUILD_SRC_DIR}/maps/free2play.csv`, 'ascii').replace(/\r/g, '').split('\n'));
+        // base content, or the list merged with mod changes (src/engine/MapCsv.ts)
+        this.loadCsvMap(this.multimap, readMapCsv('multiway.csv'));
+        this.loadCsvMap(this.freemap, readMapCsv('free2play.csv'));
 
         const path: string = 'data/pack/server/maps/';
         const maps: string[] = fs.readdirSync(path).filter(x => x[0] === 'm');

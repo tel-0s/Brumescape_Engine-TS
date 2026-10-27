@@ -29,7 +29,8 @@ The capabilities that exist now are the reference examples:
 | `title.ts` | `title/*.png`, `binary/title.jpg` | `setAsset` only. `tools/pack/sprite/title.ts` reads `getAsset`. |
 | `scripts.ts` | `scripts/**/*.rs2` | Stages files in `prepare`, registers script names, adds a compiler source in `beforeCompile`. |
 | `script-overrides.ts` | `scripts/**/*.rs2` that redefine a script | Slot A. Plans override chains in `afterRevalidate` (registers the generated `original_*` names). In `beforeCompile`: renames replaced blocks, stages base files under `data/pack/mods/overrides/` and omits the originals (`CompilerConfig.omit`). |
-| `spawns.ts` | `spawns.json` | `worldBoot`: places npcs and locs. |
+| `spawns.ts` | `spawns.json` | `beforeSymbols`: checks names and values. `worldBoot`: places npcs, locs and objs. |
+| `maps.ts` | `maps/**/m<x>_<z>.jm2`, `.patch.jm2`, `maps/free2play.csv`, `maps/multiway.csv` | `afterRevalidate`: `registerName('map', MapPack, …)` for new squares, `setAsset('map', …)`, `recordOutput` for new squares, merged zone lists. `before.maps`: resolves names and patches into numeric `.jm2` files in `data/pack/mods/maps/`. `tools/pack/map/Pack.js` reads `getAssets('map')`. |
 | `init.ts` | mod.json `"init"` | `worldBoot`: runs `[proc,<init>]`. |
 | `data.ts` | `config/**/*.constant`, `.dbtable`, `.dbrow`, `.flo`, `category=` | `constants` hook merges constants (and `afterSymbols` rewrites `constant.sym`); registers the three config types with `registerConfigType`; registers categories in `afterRevalidate`; validates floor ids in `configs`. |
 | `audio.ts` | `synth/*.synth`, `songs/*.mid`, `jingles/*.mid` | `registerName` plus `setAsset('synth'/'midi'/'midikind', …)`. `sound/pack.ts`, `midi/pack.ts` and `versionlist/pack.ts` read the assets. `worldBoot` re-registers the midi names, because `midi_song` looks names up in the server's `MidiPack`. `src/mod/SynthFormat.ts` validates wave files. |

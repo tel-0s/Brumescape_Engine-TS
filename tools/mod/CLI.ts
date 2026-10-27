@@ -6,6 +6,7 @@ import kleur from 'kleur';
 
 import { discoverMods, findInstalledMods, readModsConfig, writeModsConfig } from '#/mod/ModDiscovery.js';
 import Environment from '#/util/Environment.js';
+import { MAP_USAGE, mapCommand } from '#tools/mod/MapTool.js';
 
 const MODS_DIR = Environment.BUILD_MODS_DIR;
 
@@ -18,7 +19,8 @@ Commands:
   list              show installed mods in load order, and disabled mods
   create            scaffold a new mod (interactive)
   enable <name>     enable a mod (removes it from mods.json "disabled")
-  disable <name>    disable a mod without deleting it (adds it to mods.json "disabled")`;
+  disable <name>    disable a mod without deleting it (adds it to mods.json "disabled")
+${MAP_USAGE}`;
 
 async function main() {
     const [command, arg] = process.argv.slice(2);
@@ -37,6 +39,8 @@ async function main() {
         case 'enable':
         case 'disable':
             return setEnabled(arg, command === 'enable');
+        case 'map':
+            return mapCommand(process.argv.slice(3));
         case 'help':
         case '--help':
         case '-h':

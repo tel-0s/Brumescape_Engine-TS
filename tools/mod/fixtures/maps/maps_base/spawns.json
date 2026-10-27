@@ -1,0 +1,9 @@
+{
+    "npcs": [{ "id": "maps_hermit", "coord": "0_60_50_36_36" }],
+    "locs": [{ "id": "maps_shrine", "coord": "0_60_50_38_38", "shape": 10, "angle": 1 }],
+    "objs": [
+        { "id": "coins", "coord": "0_60_50_40_30", "count": 100 },
+        { "id": "maps_relic", "coord": "0_60_50_40_31", "respawn": 50 },
+        { "id": "bronze_arrow", "coord": "0_60_50_40_32", "count": 5, "respawn": false }
+    ]
+}

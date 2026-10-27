@@ -1,0 +1,1 @@
+[mod bad_spawns] spawns.json:4: objs[1]: unknown obj 'no_such_obj'

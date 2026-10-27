@@ -1,0 +1,12 @@
+// Patch for m50_50 (Lumbridge, base content). Everything not listed here stays.
+==== MAP ====
+0 20 20: h1 omarble ugrassland      // one tile gets new terrain
+==== LOC ====
+-0 17 41: tree                      // remove a base tree (by name)...
+0 17 41: maps_shrine 10 2           // ...and put the mod's shrine there
+==== NPC ====
+-0 0 38: giantspider1
+0 1 38: maps_hermit
+==== OBJ ====
+-0 5 27: bronze_arrow 1
+0 5 28: coins 50

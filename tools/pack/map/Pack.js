@@ -4,6 +4,7 @@ import path from 'path';
 import { compressGz } from '#/io/GZip.js';
 import Packet from '#/io/Packet.js';
 import Environment from '#/util/Environment.js';
+import ModManager from '#/mod/ModManager.js';
 import { MapPack, shouldBuildFile } from '#tools/pack/PackFile.js';
 import { listFilesExt } from '#tools/pack/Parse.js';
 
@@ -101,7 +102,15 @@ export function packMaps(cache) {
         return;
     }
 
-    const maps = listFilesExt(`${Environment.BUILD_SRC_DIR}/maps`, '.jm2');
+    // name -> source file: base content, then mod squares and replacements
+    // (src/mod/capabilities/maps.ts stages them as numeric .jm2 files)
+    const maps = new Map();
+    for (const file of listFilesExt(`${Environment.BUILD_SRC_DIR}/maps`, '.jm2')) {
+        maps.set(path.basename(file, path.extname(file)), file);
+    }
+    for (const [name, file] of ModManager.getAssets('map')) {
+        maps.set(name, file);
+    }
 
     if (!fs.existsSync('data/pack/client/maps')) {
         fs.mkdirSync('data/pack/client/maps', { recursive: true });
@@ -111,8 +120,7 @@ export function packMaps(cache) {
         fs.mkdirSync('data/pack/server/maps', { recursive: true });
     }
 
-    for (const file of maps) {
-        const basename = path.basename(file, path.extname(file));
+    for (const [basename, file] of maps) {
         const [mapX, mapZ] = basename.slice(1).split('_');
 
         const mapFile = `data/pack/client/maps/m${mapX}_${mapZ}`;
@@ -129,7 +137,8 @@ export function packMaps(cache) {
         if (
             packerUpdated ||
             shouldBuildFile(file, mapFile) || shouldBuildFile(file, locFile) ||
-            shouldBuildFile(file, serverNpcFile) || shouldBuildFile(file, serverLocFile)
+            shouldBuildFile(file, serverNpcFile) || shouldBuildFile(file, serverLocFile) ||
+            shouldBuildFile(file, serverMapFile) || shouldBuildFile(file, serverObjFile)
         ) {
             data = fs
                 .readFileSync(file, 'utf8')

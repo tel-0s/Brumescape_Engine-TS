@@ -1,0 +1,1 @@
+[mod bad_map] maps/m60_50.jm2:4: Unknown loc 'no_such_loc'

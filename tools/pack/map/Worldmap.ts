@@ -6,6 +6,7 @@ import FloType from '#/cache/config/FloType.js';
 import LocType from '#/cache/config/LocType.js';
 import NpcType from '#/cache/config/NpcType.js';
 import { CoordGrid } from '#/engine/CoordGrid.js';
+import { readMapCsv } from '#/engine/MapCsv.js';
 import Jagfile from '#/io/Jagfile.js';
 import Packet from '#/io/Packet.js';
 import Environment from '#/util/Environment.js';
@@ -101,10 +102,11 @@ export async function packWorldmap() {
     }
 
     // easiest solution for the time being
-    const multiway = fs.readFileSync(`${Environment.BUILD_SRC_DIR}/maps/multiway.csv`, 'ascii').replace(/\r/g, '').split('\n');
+    // base content, or the lists merged with mod changes (src/engine/MapCsv.ts)
+    const multiway = readMapCsv('multiway.csv');
     const multimap = processCsv(multiway, 'multiway');
 
-    const free2play = fs.readFileSync(`${Environment.BUILD_SRC_DIR}/maps/free2play.csv`, 'ascii').replace(/\r/g, '').split('\n');
+    const free2play = readMapCsv('free2play.csv');
     const freemap = processCsv(free2play, 'free');
 
     const ignoreraw = fs.readFileSync(`${Environment.BUILD_SRC_DIR}/maps/ignore.csv`, 'ascii').replace(/\r/g, '').split('\n');
@@ -631,8 +633,9 @@ export async function packWorldmap() {
     ];
 
     for (let i = 0; i < FloType.configs.length; i++) {
-        floorcol.p4(refColors[i][0]);
-        floorcol.p4(refColors[i][1]);
+        // floors added by mods have no reference colour: draw them black
+        floorcol.p4(refColors[i]?.[0] ?? 0);
+        floorcol.p4(refColors[i]?.[1] ?? 0);
     }
 
     jag.write('floorcol.dat', floorcol);

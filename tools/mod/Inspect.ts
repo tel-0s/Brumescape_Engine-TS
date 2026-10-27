@@ -217,7 +217,8 @@ Reads the output of the last build (data/pack, data/symbols).
   count <archive>            number of files in a cache archive
   crc                        the CRC table served at /crc
   ids [kind]                 idmap.json of BUILD_MODS_DIR
-  state                      mod build fingerprint and recorded outputs`;
+  state                      mod build fingerprint and recorded outputs
+  map <square> [<level> <x> <z>]   a packed map square as client and server get it`;
 
 function replacer(_key: string, value: unknown) {
     if (value instanceof Map) {
@@ -309,6 +310,9 @@ async function cli(args: string[]) {
             console.log(fs.existsSync(file) ? fs.readFileSync(file, 'utf-8') : 'no state (no successful build yet)');
             break;
         }
+        case 'map':
+            (await import('#tools/mod/MapInspect.js')).inspectMapCli(rest);
+            break;
         default:
             console.log(USAGE);
             if (command && command !== 'help') {

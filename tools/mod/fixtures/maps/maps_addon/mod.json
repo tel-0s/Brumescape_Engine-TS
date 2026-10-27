@@ -1,0 +1,7 @@
+{
+    "name": "maps_addon",
+    "version": "1.0.0",
+    "author": "fixtures",
+    "description": "Maps fixture: patches maps_base's square, replaces a base square, wins a square conflict",
+    "dependencies": { "maps_base": "1.0.0" }
+}

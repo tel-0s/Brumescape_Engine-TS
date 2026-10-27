@@ -1,0 +1,3 @@
+// redefines a base script
+[opnpc1,hans]
+mes("hi");

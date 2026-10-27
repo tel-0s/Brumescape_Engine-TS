@@ -49,3 +49,6 @@ Thumbs.db
 ### macOS ###
 .DS_Store
 ._*
+
+# mod fixture builds write their own idmap; fixture ids are not meant to be stable
+tools/mod/fixtures/**/idmap.json

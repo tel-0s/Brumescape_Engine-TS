@@ -1,0 +1,10 @@
+// same relative path as core_addon/scripts/quest/start.rs2: both must compile
+[opnpc1,core_guard]
+%core_progress = 1;
+~chatnpc("<p,neutral>Halt! Who goes there?");
+
+[opheld1,core_box]
+mes("The box is empty.");
+
+[proc,core_init]
+def_int $unused = 0;

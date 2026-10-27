@@ -1,0 +1,8 @@
+[core_box]
+name=Core box
+desc=Uses the mod model core_box.
+model=core_box
+2dzoom=1410
+2dxan=400
+2dyan=368
+iop1=Open

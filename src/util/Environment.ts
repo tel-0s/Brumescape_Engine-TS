@@ -1,4 +1,3 @@
-import fs from 'fs';
 import 'dotenv/config';
 import { tryParseBoolean, tryParseInt, tryParseString } from '#/util/TryParse.js';
 import { WalkTriggerSetting } from '#/engine/entity/WalkTriggerSetting.js';
@@ -107,5 +106,8 @@ export default {
     // used for unpacking/custom development
     BUILD_VERIFY_PACK: tryParseBoolean(process.env.BUILD_VERIFY_PACK, true),
     // used for unpacking/custom development
-    BUILD_SRC_DIR: tryParseString(process.env.BUILD_SRC_DIR, '../content')
+    BUILD_SRC_DIR: tryParseString(process.env.BUILD_SRC_DIR, '../content'),
+    // directory holding mods (<dir>/<mod>/mod.json), its idmap.json and mods.json;
+    // point it at a fixture dir (tools/mod/fixtures/<name>) to test capabilities
+    BUILD_MODS_DIR: tryParseString(process.env.BUILD_MODS_DIR, 'mods')
 };

@@ -36,7 +36,8 @@ type HookName = 'prepare' | 'beforeRevalidate' | 'afterRevalidate' | 'beforeSymb
 class ModManager {
     // Enabled mods in load order
     mods: Mod[] = [];
-    modsDir: string = 'mods';
+    // Environment.BUILD_MODS_DIR (default 'mods'); holds idmap.json and mods.json too
+    modsDir: string = Environment.BUILD_MODS_DIR;
 
     // Registered capability modules, in registration order
     readonly capabilities: ModCapability[] = [];

@@ -5,10 +5,13 @@ import { select, input } from '@inquirer/prompts';
 import kleur from 'kleur';
 
 import { discoverMods, findInstalledMods, readModsConfig, writeModsConfig } from '#/mod/ModDiscovery.js';
+import Environment from '#/util/Environment.js';
 
-const MODS_DIR = 'mods';
+const MODS_DIR = Environment.BUILD_MODS_DIR;
 
 const USAGE = `Usage: bun run mod [command]
+
+Works on the mods dir in BUILD_MODS_DIR (default: mods).
 
 Commands:
   (none)            interactive menu

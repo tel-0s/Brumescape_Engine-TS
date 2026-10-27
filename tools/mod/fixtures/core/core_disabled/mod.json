@@ -1,0 +1,5 @@
+{
+    "name": "core_disabled",
+    "version": "1.0.0",
+    "description": "Disabled in mods.json: nothing from it may be packed"
+}

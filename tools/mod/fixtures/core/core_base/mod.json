@@ -1,0 +1,7 @@
+{
+    "name": "core_base",
+    "version": "1.0.0",
+    "author": "fixtures",
+    "description": "Foundation fixture: one of each core capability",
+    "init": "core_init"
+}

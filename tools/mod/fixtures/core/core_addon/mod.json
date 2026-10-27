@@ -1,0 +1,7 @@
+{
+    "name": "core_addon",
+    "version": "1.0.0",
+    "author": "fixtures",
+    "description": "Sorts before core_base but depends on it, so it loads after it",
+    "dependencies": { "core_base": "1.0.0" }
+}

@@ -1,0 +1,1 @@
+{ "name": "cyc_b", "version": "1.0.0", "dependencies": { "cyc_a": "1.0.0" } }

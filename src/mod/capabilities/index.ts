@@ -25,6 +25,7 @@ ModManager.register((await import('#/mod/capabilities/init.js')).default);
 // ---- slot A: script overrides and partial config patching ----
 
 // ---- slot B: interfaces (.if) and sprites ----
+ModManager.register((await import('#/mod/capabilities/sprites.js')).default);
 
 // ---- slot C: animations (.anim frames/bases) and model authoring ----
 

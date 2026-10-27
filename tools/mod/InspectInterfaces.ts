@@ -10,6 +10,11 @@
 // data/pack/server/interface.dat; src/cache/graphics/Pix.ts reads sprites from
 // the media archive in the client cache (archive 0 file 4), like the client.
 
+import fs from 'fs';
+import path from 'path';
+
+import { Jimp } from 'jimp';
+
 import Component from '#/cache/config/Component.js';
 import Pix from '#/cache/graphics/Pix.js';
 import Jagfile from '#/io/Jagfile.js';
@@ -103,6 +108,78 @@ export function readSpriteTiles(name: string): Pix[] {
 export function firstColour(pix: Pix): number {
     const index = pix.pixels.find(p => p !== 0);
     return index === undefined ? 0 : pix.palette[index];
+}
+
+export interface ImageDiff {
+    // Pixels compared (inside the crop boxes of every tile)
+    pixels: number;
+    // Pixels whose decoded colour or transparency differs from the PNG
+    mismatched: number;
+    // Distinct source colours, after transparent pixels are left out. More
+    // than 254 means the packer had to quantize, so the image is lossy.
+    colours: number;
+    // The first mismatch, for the log
+    first: string | null;
+}
+
+// Compares a packed image (<entry>.dat in a jag file, every tile) with the
+// PNG it was packed from (<dir>/<name>.png, tiles from <dir>/meta/<name>.opt).
+// A source pixel is transparent when its alpha is below 128 or it is exactly
+// #FF00FF; every other pixel must decode to its own RGB.
+export async function diffPackedImage(jag: Jagfile, entry: string, dir: string, name: string): Promise<ImageDiff> {
+    const img = await Jimp.read(path.join(dir, `${name}.png`));
+    const { width, data } = img.bitmap;
+    const sourceRgb = (x: number, y: number): number => {
+        const pos = (y * width + x) * 4;
+        const rgb = (data[pos] << 16) | (data[pos + 1] << 8) | data[pos + 2];
+        return data[pos + 3] < 128 || rgb === 0xff00ff ? -1 : rgb;
+    };
+
+    const colours = new Set<number>();
+    for (let y = 0; y < img.bitmap.height; y++) {
+        for (let x = 0; x < width; x++) {
+            const rgb = sourceRgb(x, y);
+            if (rgb !== -1) {
+                colours.add(rgb);
+            }
+        }
+    }
+
+    let tileW = width;
+    const opt = path.join(dir, 'meta', `${name}.opt`);
+    if (fs.existsSync(opt)) {
+        const first = fs.readFileSync(opt, 'ascii').split(/\r?\n/)[0];
+        if (first.includes('x')) {
+            tileW = parseInt(first.split('x')[0], 10);
+        }
+    }
+    const tilesPerRow = Math.max(1, Math.floor(width / tileW));
+
+    const diff: ImageDiff = { pixels: 0, mismatched: 0, colours: colours.size, first: null };
+    for (let tile = 0; ; tile++) {
+        const pix = Pix.unpackJag(jag, entry, tile);
+        if (!pix) {
+            break;
+        }
+        const originX = (tile % tilesPerRow) * pix.width + pix.cropLeft;
+        const originY = Math.floor(tile / tilesPerRow) * pix.height + pix.cropTop;
+        for (let y = 0; y < pix.cropBottom; y++) {
+            for (let x = 0; x < pix.cropRight; x++) {
+                const index = pix.pixels[y * pix.cropRight + x];
+                const packed = index === 0 ? -1 : pix.palette[index];
+                const source = sourceRgb(originX + x, originY + y);
+                diff.pixels++;
+                if (packed !== source) {
+                    diff.mismatched++;
+                    if (diff.first === null) {
+                        const show = (rgb: number) => (rgb === -1 ? 'transparent' : `#${rgb.toString(16).padStart(6, '0')}`);
+                        diff.first = `tile ${tile} pixel ${originX + x},${originY + y}: source ${show(source)}, packed ${show(packed)}`;
+                    }
+                }
+            }
+        }
+    }
+    return diff;
 }
 
 function describe(com: Component) {

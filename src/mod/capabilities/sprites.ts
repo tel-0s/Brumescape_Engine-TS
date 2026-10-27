@@ -93,13 +93,12 @@ export function getSpriteShape(name: string): SpriteShape | undefined {
 }
 
 // Opaque pixels as convertImage (tools/pack/PixPack.ts) treats them: alpha
-// >= 128 and not close to the #FF00FF transparency colour.
+// >= 128 and not exactly the #FF00FF transparency colour.
 function isOpaque(data: Buffer | Uint8Array, pos: number): boolean {
     if (data[pos + 3] < 128) {
         return false;
     }
-    const dist = (data[pos] - 255) ** 2 + data[pos + 1] ** 2 + (data[pos + 2] - 255) ** 2;
-    return dist >= 10000;
+    return !(data[pos] === 0xff && data[pos + 1] === 0 && data[pos + 2] === 0xff);
 }
 
 // Tight crop box of the opaque pixels of one tile. An empty tile gets a 1x1

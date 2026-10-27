@@ -177,29 +177,11 @@ export async function convertImage(index: Packet, srcPath: string, safeName: str
     const data = Packet.alloc(4);
     data.p2(index.pos);
 
+    // Transparent pixels (palette index 0) are exactly the ones with alpha
+    // below 128 or the exact colour #FF00FF, as in 245.2. Colours close to
+    // #FF00FF stay opaque: base sprites use purples such as #A906ED
+    // (prayeron, magicon). Images with soft edges need an alpha channel.
     const img = await Jimp.read(`${srcPath}/${safeName}.png`);
-
-    // Handle magic pink transparency (#FF00FF)
-    // Scan the image and convert near-#FF00FF pixels to transparent black
-    // This removes anti-aliasing artifacts against the pink background
-    for (let j = 0; j < img.bitmap.width * img.bitmap.height; j++) {
-        const pos = j * 4;
-        const r = img.bitmap.data[pos + 0];
-        const g = img.bitmap.data[pos + 1];
-        const b = img.bitmap.data[pos + 2];
-        
-        // Euclidean distance squared from (255, 0, 255)
-        const dist = (r - 255) ** 2 + (g - 0) ** 2 + (b - 255) ** 2;
-
-        // Increased threshold to be more aggressive against pink fringing
-        // 10000 covers a wider range of magenta-ish pixels
-        if (dist < 10000) {
-            img.bitmap.data[pos + 3] = 0; // Set Alpha to 0
-            img.bitmap.data[pos + 0] = 0;
-            img.bitmap.data[pos + 1] = 0;
-            img.bitmap.data[pos + 2] = 0;
-        }
-    }
 
     let tileX = img.bitmap.width;
     let tileY = img.bitmap.height;

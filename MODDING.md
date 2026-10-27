@@ -939,8 +939,12 @@ The same pattern adds a song to the music tab: see
    ```
 
 **Transparency and colours**: a pixel is transparent when its alpha is below
-128 or when it is close to `#FF00FF`. A sprite has at most 255 colours.
-Larger images are quantized automatically.
+128 or when its colour is exactly `#FF00FF`. Colours near `#FF00FF` stay
+opaque (base sprites use purples such as `#A906ED`), so an anti-aliased edge
+against a magenta background keeps a pink fringe: use an alpha channel
+instead. A sprite has at most 254 colours, plus transparency. Larger images
+are quantized automatically. The same rules apply to textures and the title
+screen sprites.
 
 **Limits**: the media index is limited to 64 KB. Base content uses about
 7 KB, and each sprite adds about 3 bytes per colour plus 7 bytes per tile.

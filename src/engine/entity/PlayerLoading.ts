@@ -1,6 +1,8 @@
 import 'dotenv/config';
 
 import InvType from '#/cache/config/InvType.js';
+import ObjType from '#/cache/config/ObjType.js';
+import VarPlayerType from '#/cache/config/VarPlayerType.js';
 import { NetworkPlayer } from '#/engine/entity/NetworkPlayer.js';
 import Player, { getExpByLevel, getLevelByExp } from '#/engine/entity/Player.js';
 import { PlayerStat } from '#/engine/entity/PlayerStat.js';
@@ -8,6 +10,22 @@ import World from '#/engine/World.js';
 import Packet from '#/io/Packet.js';
 import ClientSocket from '#/server/ClientSocket.js';
 import { fromBase37, toBase37 } from '#/util/JString.js';
+
+// Saved data that this build has no config for: it belongs to a mod that is
+// disabled or removed (its ids stay reserved in mods/idmap.json). The player
+// keeps it out of the game, and Player.save() writes it back unchanged, so it
+// returns when the mod is enabled again.
+export interface HeldObj {
+    slot: number;
+    id: number;
+    count: number;
+}
+
+export interface HeldInv {
+    // slot count of the saved inventory
+    size: number;
+    objs: HeldObj[];
+}
 
 export class PlayerLoading {
     public static readonly SAV_MAGIC: number = 0x2004;
@@ -26,6 +44,21 @@ export class PlayerLoading {
         sav.pos = sav.data.length - 4;
         const crc = sav.g4s();
         return crc === Packet.getcrc(sav.data, 0, sav.data.length - 4);
+    }
+
+    // Whether this build defines a config id. An id past the end, or a gap
+    // (an id kept for a disabled or removed mod, packed without a name), is
+    // unknown.
+    static isKnownVarp(id: number): boolean {
+        return !!VarPlayerType.get(id)?.debugname;
+    }
+
+    static isKnownInv(id: number): boolean {
+        return !!InvType.get(id)?.debugname;
+    }
+
+    static isKnownObj(id: number): boolean {
+        return !!ObjType.get(id)?.debugname;
     }
 
     static load(name: string, sav: Packet, client: ClientSocket | null) {
@@ -97,16 +130,31 @@ export class PlayerLoading {
 
         const varpCount = sav.g2();
         for (let i = 0; i < varpCount; i++) {
-            player.vars[i] = sav.g4s();
+            const value = sav.g4s();
+            if (PlayerLoading.isKnownVarp(i)) {
+                player.vars[i] = value;
+            } else if (value !== 0) {
+                // a varp of a disabled or removed mod (save() writes it back)
+                player.heldVars.set(i, value);
+            }
         }
+
+        // objs of known types that come back into the game from slots past an
+        // inventory's last slot (see Player.save), placed after every
+        // inventory is loaded
+        const returning: { type: number; obj: HeldObj }[] = [];
 
         const invCount = sav.g1();
         for (let i = 0; i < invCount; i++) {
             const type = sav.g2();
-            const invType = InvType.get(type);
-            const size = version >= 5 ? sav.g2() : invType.size;
+            const invType: InvType | undefined = InvType.get(type);
+            const known = PlayerLoading.isKnownInv(type);
+            if (!known && version < 5) {
+                throw new Error(`Save has inventory type ${type}, which this build does not define, and a version ${version} save does not store its size`);
+            }
+            const size = version >= 5 ? sav.g2() : invType!.size;
 
-            const objs = [];
+            const objs: HeldObj[] = [];
             for (let slot = 0; slot < size; slot++) {
                 const id = sav.g2() - 1;
                 if (id === -1) {
@@ -121,13 +169,40 @@ export class PlayerLoading {
                 objs.push({ slot, id, count });
             }
 
-            if (invType.scope === InvType.SCOPE_PERM) {
+            if (!known) {
+                // an inventory of a disabled or removed mod (save() writes it back)
+                player.heldInvs.set(type, { size, objs });
+                continue;
+            }
+
+            if (invType!.scope === InvType.SCOPE_PERM) {
                 const inv = player.getInventory(type);
                 if (inv) {
                     for (const obj of objs) {
-                        inv.set(obj.slot, { id: obj.id, count: obj.count });
+                        if (!PlayerLoading.isKnownObj(obj.id)) {
+                            // an obj of a disabled or removed mod keeps its slot
+                            player.holdObj(type, obj);
+                        } else if (obj.slot < inv.capacity && !inv.get(obj.slot)) {
+                            inv.set(obj.slot, { id: obj.id, count: obj.count });
+                        } else {
+                            returning.push({ type, obj });
+                        }
                     }
                 }
+            }
+        }
+
+        // Each returning obj goes to the first free slot that no held obj
+        // keeps. A worn obj goes to the backpack (a worn slot is a body
+        // part). With no free slot it stays held.
+        for (const { type, obj } of returning) {
+            const target = type === InvType.WORN && InvType.INV !== -1 ? InvType.INV : type;
+            const inv = player.getInventory(target);
+            const slot = inv ? player.freeUnheldSlot(target, inv) : -1;
+            if (inv && slot !== -1) {
+                inv.set(slot, { id: obj.id, count: obj.count });
+            } else {
+                player.holdObj(type, obj);
             }
         }
 

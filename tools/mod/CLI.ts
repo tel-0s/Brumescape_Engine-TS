@@ -361,7 +361,16 @@ function setEnabled(name: string | undefined, enabled: boolean) {
         disabled.add(name);
     }
     writeModsConfig(MODS_DIR, { disabled: Array.from(disabled) });
-    console.log(kleur.green(`${name} ${enabled ? 'enabled' : 'disabled'}. Rebuild to apply (bun run build).`));
+    console.log(kleur.green(`${name} ${enabled ? 'enabled' : 'disabled'}. Rebuild to apply (bun run build), then restart the server.`));
+    if (!enabled) {
+        console.log(
+            kleur.yellow(
+                `While ${name} is disabled, its npcs, locs, maps, interfaces and scripts are gone, and script overrides return to base content.\n` +
+                    'Players keep its saved varps and items: the server holds them out of the game and saves them back, and they return when it is enabled again.\n' +
+                    'Keep its ids in idmap.json. See MODDING.md, "Disabling or removing a mod that players have used".'
+            )
+        );
+    }
 }
 
 // Builds base content plus one mod and its dependencies, from a temporary mods

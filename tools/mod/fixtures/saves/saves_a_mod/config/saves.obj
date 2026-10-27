@@ -1,0 +1,12 @@
+[saves_hat]
+name=Saved hat
+desc=Worn and carried in the save checks.
+model=model_2429_obj
+wearpos=hat
+iop2=Wear
+
+[saves_coin]
+name=Saved coin
+desc=A stack in the mod inventory.
+model=model_2429_obj
+stackable=yes

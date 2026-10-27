@@ -95,7 +95,8 @@ All folders are optional. Delete the folders that you do not use.
 
 - `mods/mods.json` turns mods off without deleting them:
   `{ "disabled": ["MyMod"] }`. If the file does not exist, every mod is
-  enabled.
+  enabled. Players keep the saved varps and items of a disabled mod: see
+  [Disabling or removing a mod](#disabling-or-removing-a-mod-that-players-have-used).
 - `bun run mod list` shows the load order. `bun run mod disable MyMod` and
   `bun run mod enable MyMod` edit `mods.json`. Rebuild after a change.
 - **Load order**: mods are sorted by `name` (plain character order, so
@@ -163,9 +164,29 @@ You write names everywhere: `model1=my_model`, `0 30 30: my_tree`,
 - Mod ids depend on the install: two servers with different mods give
   different ids to the same name. **Never write a numeric id for something
   that a mod defines.** Use the name.
-- Removing a mod does not clean player saves. Items of a removed mod stay in
-  the saves with their old ids. Do not remove a mod from a live world that
-  players have used.
+
+### Disabling or removing a mod that players have used
+
+When a player logs in, the server keeps the saved data that the current
+build has no config for: the values of the mod's varps, the mod's
+inventories, and the mod's items in other inventories (backpack, bank, worn
+items). This data stays out of the game, and every save writes it back
+unchanged. When the mod is enabled again (with the same `idmap.json`), it all
+comes back.
+
+- While the mod is off, the slot of a held item looks empty. If the game
+  puts something else in that slot, the held item is saved after the last
+  slot. When the mod comes back, the item goes to the first free slot of the
+  same inventory (a worn item goes to the backpack). If there is no free
+  slot, it stays held until there is one.
+- Everything else of the mod is gone while it is off: its npcs, locs, map
+  squares, interfaces and scripts. Script overrides return to base content,
+  so quest progress in base varps can move on without the mod's steps.
+- Saves never lose the held data, but only if `idmap.json` keeps the mod's
+  ids. If the ids are given to other names, held values and items turn
+  into those names.
+- A save from an old save version (before version 5) that has an inventory
+  the build does not know cannot load.
 
 ### Override rules
 
@@ -1723,8 +1744,10 @@ Things mods cannot do yet:
   `map new` scaffold makes level 0 only, with a uniform floor.
 - **Categories** come only from `category=` in a mod npc, obj or loc.
 - **Music**: mod songs cannot use the base `unlock` bits.
-- **Removing a mod** does not clean player saves (see
-  [Stable ids and player saves](#stable-ids-and-player-saves)).
+- **Removing a mod** does not clean player saves: the server keeps the mod's
+  saved varps and items out of the game (see
+  [Disabling or removing a mod](#disabling-or-removing-a-mod-that-players-have-used)).
+  There is no tool to delete them.
 - The world map tool and the client's map viewer show only part of the world
   (see [World map](#world-map)).
 - Hot rebuilds with a running dev server are tested only for configs and

@@ -32,6 +32,7 @@ import Npc from '#/engine/entity/Npc.js';
 import Obj from '#/engine/entity/Obj.js';
 import PathingEntity from '#/engine/entity/PathingEntity.js';
 import { PlayerLoading } from '#/engine/entity/PlayerLoading.js';
+import type { HeldInv, HeldObj } from '#/engine/entity/PlayerLoading.js';
 import { PlayerQueueRequest, PlayerQueueType, QueueType, ScriptArgument } from '#/engine/entity/PlayerQueueRequest.js';
 import { PlayerStat, PlayerStatEnabled, PlayerStatFree, PlayerStatNameMap } from '#/engine/entity/PlayerStat.js';
 import InputTracking from '#/engine/entity/tracking/InputTracking.js';
@@ -210,16 +211,37 @@ export default class Player extends PathingEntity {
             sav.p1(this.levels[i]);
         }
 
-        sav.p2(this.vars.length);
-        for (let i = 0; i < this.vars.length; i++) {
-            const type = VarPlayerType.get(i);
-
-            if (type.scope === VarPlayerType.SCOPE_PERM) {
+        // held varps (of disabled or removed mods) are written back as loaded
+        let varCount = this.vars.length;
+        for (const id of this.heldVars.keys()) {
+            varCount = Math.max(varCount, id + 1);
+        }
+        sav.p2(varCount);
+        for (let i = 0; i < varCount; i++) {
+            const held = this.heldVars.get(i);
+            if (held !== undefined) {
+                sav.p4(held);
+            } else if (i < this.vars.length && VarPlayerType.get(i).scope === VarPlayerType.SCOPE_PERM) {
                 sav.p4(this.vars[i]);
             } else {
                 sav.p4(0);
             }
         }
+
+        const saveObj = (obj: { id: number; count: number } | null) => {
+            if (!obj) {
+                sav.p2(0);
+                return;
+            }
+
+            sav.p2(obj.id + 1);
+            if (obj.count >= 255) {
+                sav.p1(255);
+                sav.p4(obj.count);
+            } else {
+                sav.p1(obj.count);
+            }
+        };
 
         let invCount = 0;
         const invStartPos = sav.pos;
@@ -230,22 +252,47 @@ export default class Player extends PathingEntity {
                 continue;
             }
 
-            sav.p2(typeId);
-            sav.p2(inventory.capacity);
-            for (let slot = 0; slot < inventory.capacity; slot++) {
-                const obj = inventory.get(slot);
-                if (!obj) {
-                    sav.p2(0);
-                    continue;
-                }
-
-                sav.p2(obj.id + 1);
-                if (obj.count >= 255) {
-                    sav.p1(255);
-                    sav.p4(obj.count);
+            // A held obj goes back to its own slot while that slot is empty.
+            // If the game put something else there, it is written after the
+            // last slot; PlayerLoading moves it to a free slot once its mod is
+            // enabled again.
+            const heldAt = new Map<number, HeldObj>();
+            const heldAfter: HeldObj[] = [];
+            for (const obj of this.heldObjs.get(typeId) ?? []) {
+                if (obj.slot < inventory.capacity && !inventory.get(obj.slot) && !heldAt.has(obj.slot)) {
+                    heldAt.set(obj.slot, obj);
                 } else {
-                    sav.p1(obj.count);
+                    heldAfter.push(obj);
                 }
+            }
+
+            sav.p2(typeId);
+            sav.p2(inventory.capacity + heldAfter.length);
+            for (let slot = 0; slot < inventory.capacity; slot++) {
+                saveObj(inventory.get(slot) ?? heldAt.get(slot) ?? null);
+            }
+            for (const obj of heldAfter) {
+                saveObj(obj);
+            }
+            invCount++;
+        }
+        // held objs of an inventory the player has no container for
+        for (const [typeId, held] of this.heldObjs) {
+            if (this.invs.has(typeId) || held.length === 0) {
+                continue;
+            }
+            sav.p2(typeId);
+            sav.p2(held.length);
+            held.forEach(saveObj);
+            invCount++;
+        }
+        // whole inventories of disabled or removed mods, as loaded
+        for (const [typeId, held] of this.heldInvs) {
+            const bySlot = new Map(held.objs.map(obj => [obj.slot, obj]));
+            sav.p2(typeId);
+            sav.p2(held.size);
+            for (let slot = 0; slot < held.size; slot++) {
+                saveObj(bySlot.get(slot) ?? null);
             }
             invCount++;
         }
@@ -296,6 +343,13 @@ export default class Player extends PathingEntity {
     vars: Int32Array;
     varsString: string[];
     invs: Map<number, Inventory> = new Map<number, Inventory>();
+    // Saved data that this build has no config for, because only a disabled
+    // or removed mod defines it (see PlayerLoading.load): varp values, whole
+    // inventories, and objs inside known inventories (by inventory type). It
+    // stays out of the game, and save() writes it back.
+    heldVars: Map<number, number> = new Map();
+    heldInvs: Map<number, HeldInv> = new Map();
+    heldObjs: Map<number, HeldObj[]> = new Map();
     nextTarget: Entity | null = null;
 
     publicChat: ChatModePublic = ChatModePublic.ON;
@@ -1330,6 +1384,10 @@ export default class Player extends PathingEntity {
             }
 
             const config = ObjType.get(equip.id);
+            if (!config) {
+                // not in this build (PlayerLoading holds such objs out of the game)
+                continue;
+            }
 
             if (config.wearpos2 !== -1) {
                 if (skippedSlots.indexOf(config.wearpos2) === -1) {
@@ -1351,7 +1409,7 @@ export default class Player extends PathingEntity {
             }
 
             const equip = worn.get(slot);
-            if (!equip) {
+            if (!equip || !ObjType.get(equip.id)) {
                 const appearanceValue = this.getAppearanceInSlot(slot);
                 if (appearanceValue < 1) {
                     stream.p1(0);
@@ -1411,6 +1469,28 @@ export default class Player extends PathingEntity {
 
             return player.getInventory(listener.type);
         }
+    }
+
+    // Keep a saved obj that this build cannot place (see heldObjs)
+    holdObj(type: number, obj: HeldObj) {
+        const held = this.heldObjs.get(type);
+        if (held) {
+            held.push(obj);
+        } else {
+            this.heldObjs.set(type, [obj]);
+        }
+    }
+
+    // The first empty slot of `inv` (inventory type `type`) that no held obj
+    // keeps, or -1
+    freeUnheldSlot(type: number, inv: Inventory): number {
+        const kept = new Set((this.heldObjs.get(type) ?? []).map(obj => obj.slot));
+        for (let slot = 0; slot < inv.capacity; slot++) {
+            if (!inv.get(slot) && !kept.has(slot)) {
+                return slot;
+            }
+        }
+        return -1;
     }
 
     getInventory(inv: number): Inventory | null {

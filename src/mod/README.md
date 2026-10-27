@@ -2,7 +2,7 @@
 
 This guide is for people who add a **capability** to the mod loader, such as a
 new kind of mod asset. For the mod author's view (what goes where in a mod
-folder), see [`mods/README.md`](../../mods/README.md).
+folder), see [`MODDING.md`](../../MODDING.md).
 
 ## Files
 
@@ -14,9 +14,12 @@ folder), see [`mods/README.md`](../../mods/README.md).
 | `src/mod/capabilities/index.ts` | **The registration point.** One line per capability. |
 | `src/mod/capabilities/*.ts` | One module per capability. |
 | `tools/pack/PackAll.ts` | The pack pipeline. It calls the hooks. |
-| `tools/mod/CLI.ts` | `bun run mod`: list, enable, disable and create mods. |
+| `tools/mod/CLI.ts` | `bun run mod`: list, create, enable, disable and validate mods; `map`, `art`, `inspect` and `ui` run the tools below. |
+| `tools/mod/MapTool.ts` | `bun run mod map new\|copy\|patch\|grid`: map square scaffolding. |
+| `tools/mod/Art.ts` | `bun run mod:art`: OBJ conversion, model summaries, animation set tools. |
 | `tools/mod/Fixture.ts` | `bun run mod:fixture`: builds against a fixture mods dir and checks the result. |
 | `tools/mod/Inspect.ts` | `bun run mod:inspect`, and the reader API for fixture checks. |
+| `tools/mod/MapInspect.ts`, `tools/mod/InspectInterfaces.ts` | Readers for packed map squares, interfaces and media sprites (CLI and fixture API). |
 | `tools/mod/fixtures/<name>/` | Fixture mods dirs. |
 
 The capabilities that exist now are the reference examples:
@@ -32,6 +35,10 @@ The capabilities that exist now are the reference examples:
 | `spawns.ts` | `spawns.json` | `beforeSymbols`: checks names and values. `worldBoot`: places npcs, locs and objs. |
 | `maps.ts` | `maps/**/m<x>_<z>.jm2`, `.patch.jm2`, `maps/free2play.csv`, `maps/multiway.csv` | `afterRevalidate`: `registerName('map', MapPack, …)` for new squares, `setAsset('map', …)`, `recordOutput` for new squares, merged zone lists. `before.maps`: resolves names and patches into numeric `.jm2` files in `data/pack/mods/maps/`. `tools/pack/map/Pack.js` reads `getAssets('map')`. |
 | `init.ts` | mod.json `"init"` | `worldBoot`: runs `[proc,<init>]`. |
+| `sprites.ts` | `sprites/**/<name>.png` (+ `meta/<name>.opt`, `.pal.png`) | Slot B. `afterRevalidate`: stages each sprite with its meta in `data/pack/mods/sprites/`, `setAsset('sprite', …)`. `tools/pack/sprite/media.ts` reads `getAsset('sprite')` (new names appended, base names replaced) and checks the media index limit. Exports `getSpriteShape()`. |
+| `interfaces.ts` | `interfaces/**/*.if`, `*.ifpatch` | Slot B, after `sprites.ts`. `afterRevalidate`: resolves whole files, then patches in load order; `registerName('interface', InterfacePack, …)` for new interfaces and components; stages each touched interface's effective source in `data/pack/mods/interfaces/`, `setAsset('interface', …)`, `markTouched('.if')`. `tools/pack/interface/PackShared.ts` reads the staged source; `CompilerSymbols.ts` builds interface and component symbols from `InterfacePack`. |
+| `anims.ts` | `anims/**/<set>.json` | Slot C. Compiles bone-form and base-form sources (`tools/pack/graphics/AnimSource.ts`) to `.anim` files in `data/pack/mods/anims/`; `registerName` for `animset` and `frame` names, `setAsset('animset', …)`. `tools/pack/graphics/pack.ts` writes mod sets over base sets. |
+| `objmodels.ts` | `models/**/<name>.obj` (+ `.mtl`, `<name>.json`) | Slot C, after `models.ts`. Converts to `.ob2` in `data/pack/mods/models/` (`tools/pack/graphics/ObjModel.ts`), claims `model` names across `.ob2` and `.obj` in load order, `setAsset('model', …)`. |
 | `data.ts` | `config/**/*.constant`, `.dbtable`, `.dbrow`, `.flo`, `category=` | `constants` hook merges constants (and `afterSymbols` rewrites `constant.sym`); registers the three config types with `registerConfigType`; registers categories in `afterRevalidate`; validates floor ids in `configs`. |
 | `audio.ts` | `synth/*.synth`, `songs/*.mid`, `jingles/*.mid` | `registerName` plus `setAsset('synth'/'midi'/'midikind', …)`. `sound/pack.ts`, `midi/pack.ts` and `versionlist/pack.ts` read the assets. `worldBoot` re-registers the midi names, because `midi_song` looks names up in the server's `MidiPack`. `src/mod/SynthFormat.ts` validates wave files. |
 

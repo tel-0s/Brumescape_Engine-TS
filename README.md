@@ -2,6 +2,25 @@
     <h1>Lost City - July 13, 2004</h1>
 </div>
 
+## Brumescape
+
+Brumescape is a fork of Lost City (revision 245.2) with a mod loader. Mods add
+new lands, quests, items, npcs, interfaces, models, animations, sounds and
+music, or change base content, without changing the content repository.
+
+- **Writing mods:** [MODDING.md](MODDING.md) is the guide for mod authors,
+  with walkthroughs for a new land and a quest.
+- **Mods folder:** mods live in [`mods/`](mods/). Start one with
+  `bun run mod create <name>`, check it with `bun run mod validate <name>`,
+  and build everything with `bun run build`.
+- **Mod loader internals:** [src/mod/README.md](src/mod/README.md) explains how
+  to add a new kind of mod asset to the loader.
+- **Repositories:** this engine runs with `Brumescape_Content` (base content,
+  at `../content`) and serves the web client built from `Brumescape_Client-TS`
+  (in `public/client/`).
+
+The rest of this README is the upstream Lost City documentation.
+
 > [!NOTE]
 > Learn about our history and ethos on our forum: https://lostcity.rs/t/faq-what-is-lost-city/16
 

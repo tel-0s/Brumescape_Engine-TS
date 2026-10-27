@@ -12,7 +12,7 @@
 //   +val=extra_value      append a line, never replace
 //
 // Values go through the same parser as base content (constants, validation).
-// See mods/README.md for the full rules.
+// See MODDING.md ("Config patches") for the full rules.
 
 import ScriptVarType from '#/cache/config/ScriptVarType.js';
 import { ParamPack } from '#tools/pack/PackFile.js';

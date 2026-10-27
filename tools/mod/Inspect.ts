@@ -213,7 +213,9 @@ Reads the output of the last build (data/pack, data/symbols).
                              types: ${CONFIG_TYPE_NAMES.join(', ')}
   sym <file> [filter]        rows of data/symbols/<file>.sym containing filter
   script <filter>            compiled scripts in script.dat whose name contains filter
-  cache <archive> <file>     size and CRC of a cache file (archive 0 lists its jag entries)
+  cache <archive> [<file>]   size and CRC of a cache file; archive 0 also lists its jag
+                             entries, and its files can be named (cache 0 media). Without
+                             <file>: the files of the archive
   count <archive>            number of files in a cache archive
   crc                        the CRC table served at /crc
   ids [kind]                 idmap.json of BUILD_MODS_DIR
@@ -274,8 +276,30 @@ async function cli(args: string[]) {
             break;
         }
         case 'cache': {
+            const usage = `usage: cache <archive 0-4> [<file>]  (archive 0 files: ${ARCHIVE0.map((n, i) => (n ? `${i} ${n}` : null))
+                .filter(Boolean)
+                .join(', ')})`;
+            if (!/^[0-4]$/.test(rest[0] ?? '')) {
+                throw new Error(usage);
+            }
             const archive = parseInt(rest[0], 10);
-            const file = parseInt(rest[1], 10);
+            if (rest[1] === undefined) {
+                // no file: list the archive
+                const count = cacheCount(archive);
+                console.log(`cache archive ${archive}: ${count} files`);
+                if (archive === 0) {
+                    for (let i = 1; i < count; i++) {
+                        const data = readCache(0, i);
+                        console.log(`  ${i}\t${ARCHIVE0[i] ?? '?'}\t${data ? `${data.length} bytes, crc ${crc(data)}` : 'missing'}`);
+                    }
+                }
+                break;
+            }
+            // archive 0 files by number or name (cache 0 title)
+            const file = /^\d+$/.test(rest[1]) ? parseInt(rest[1], 10) : archive === 0 ? ARCHIVE0.indexOf(rest[1]) : -1;
+            if (file < 0 || (archive === 0 && file === 0)) {
+                throw new Error(`no file '${rest[1]}' in archive ${archive}. ${usage}`);
+            }
             const data = readCache(archive, file);
             if (!data) {
                 console.log(`cache ${archive}/${file}: missing`);

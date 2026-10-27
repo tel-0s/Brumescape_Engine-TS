@@ -20,7 +20,10 @@ import { convertObj, ObjError, rgbToHsl16 } from '#tools/pack/graphics/ObjModel.
 const USAGE = `Usage: bun run mod:art <command> [arguments]
 
 Models
-  obj <in.obj> [out.ob2] [options]   convert a Wavefront OBJ (+ its .mtl) to .ob2
+  obj <in.obj> [out.ob2] [options]   convert a Wavefront OBJ (+ its .mtl) and print the model.
+                                     Writes nothing unless out.ob2 is given. The build converts
+                                     OBJ files itself: keep out.ob2 out of the mod's models/
+                                     folder, or the build stops (the same model twice).
       --scale <n>        OBJ units to model units (default 128: 1 unit = 1 tile)
       --rig <file.json>  a bone-form animset: groups named after bones get their labels
       --labels a=1,b=2   group -> vertex label
@@ -211,9 +214,16 @@ function objCommand(args: string[]) {
         console.log(kleur.yellow(`warning: ${warning}`));
     }
     const data = encodeOb2(result.model);
-    const target = output ?? input.replace(/\.obj$/i, '.ob2');
-    fs.writeFileSync(target, data);
-    console.log(kleur.green(`wrote ${target} (${data.length} bytes)`));
+    if (output) {
+        fs.writeFileSync(output, data);
+        console.log(kleur.green(`wrote ${output} (${data.length} bytes)`));
+        const sameName = path.basename(output).replace(/\.ob2$/i, '') === path.basename(input).replace(/\.obj$/i, '');
+        if (sameName && path.resolve(path.dirname(output)) === path.resolve(path.dirname(input))) {
+            console.log(kleur.yellow(`warning: ${output} is next to ${input}. In a mod's models/ folder the build stops on the same model twice: delete one of them.`));
+        }
+    } else {
+        console.log(kleur.green(`converted ${input} (${data.length} bytes as .ob2; nothing written: pass an out.ob2 path to write it)`));
+    }
     console.log(`groups -> labels: ${[...result.groups].map(([g, l]) => `${g || '(none)'}=${l}`).join(', ')}`);
     describeModel(decodeOb2(data));
 }

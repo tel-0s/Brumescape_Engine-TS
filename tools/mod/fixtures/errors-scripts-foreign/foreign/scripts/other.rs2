@@ -1,0 +1,3 @@
+// this mod does not override [opnpc1,hans], so it cannot reach its original
+[label,foreign_talk]
+@original_opnpc1_hans;

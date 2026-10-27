@@ -1,1 +1,1 @@
-[mod base_clash] scripts/clash.rs2:2: [opnpc1,hans] is already defined by base content
+[mod twice] scripts/clash.rs2:2: [opnpc1,hans] is already defined by this mod (scripts/again.rs2:3)

@@ -1,0 +1,2 @@
+[mod jumps] scripts/guard.rs2:3: ~original_opnpc1_borderguard1 cannot be a proc: [opnpc1,borderguard1] in base content (scripts/areas/area_alkharid/scripts/border_gate.rs2:
+jumps to labels

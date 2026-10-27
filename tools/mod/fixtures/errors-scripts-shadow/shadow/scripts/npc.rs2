@@ -1,0 +1,3 @@
+// shadow_npc has no category and there is no [opnpc1,_]: nothing to shadow
+[opnpc1,shadow_npc]
+@original_opnpc1_shadow_npc;

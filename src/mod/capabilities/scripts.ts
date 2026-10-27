@@ -9,22 +9,24 @@
 // next to the base content scripts. Compiler errors therefore show the staged
 // path, which names the mod and the file's path inside its scripts/ folder.
 //
-// A [trigger,subject] that base content (or another mod) already defines is an
-// error for now. Script overrides are a separate capability: in its own
-// beforeCompile hook it can stage a rewritten copy of a base file, add that
-// copy to CompilerConfig.sources and the original file to CompilerConfig.omit.
+// A [trigger,subject] that base content or an earlier mod already defines is
+// an override. This capability only registers the name (the existing id is
+// kept); script-overrides.ts (slot A) removes the replaced block from
+// compilation and generates the "original" label/proc. Defining the same
+// [trigger,subject] twice in one mod is an error.
 
 import fs from 'fs';
 import path from 'path';
 
 import ModManager from '#/mod/ModManager.js';
 import type { ModCapability, ModFile } from '#/mod/ModTypes.js';
+import { scanScriptBlocks, splitSourceLines } from '#/mod/RuneScriptSource.js';
 import Environment from '#/util/Environment.js';
 import { ScriptPack } from '#tools/pack/PackFile.js';
-import { loadFile, loadFileFull } from '#tools/pack/Parse.js';
 
-interface StagedScript {
+export interface StagedScript {
     file: ModFile;
+    // Absolute path of the staged copy (the compiler reads this one)
     staged: string;
 }
 
@@ -35,26 +37,16 @@ export function scriptStagingRoot(): string {
     return ModManager.stagingDir('scripts');
 }
 
-// [trigger,subject] headers of a script file with 1-based line numbers. The
-// names come from loadFileFull, exactly like crawlConfigNames('.rs2', true) in
-// tools/pack/PackFile.ts; the line numbers are looked up in the raw file.
+// The mod script files staged for this build, mod by mod in load order
+export function stagedScripts(): readonly StagedScript[] {
+    return staged;
+}
+
+// [trigger,subject] headers of a script file with 1-based line numbers.
+// Headers inside comments are skipped, like crawlConfigNames does for base
+// scripts.
 export function scanScriptHeaders(file: string): { name: string; line: number }[] {
-    const raw = loadFile(file);
-    const headers: { name: string; line: number }[] = [];
-    let from = 0;
-    for (const line of loadFileFull(file)) {
-        if (!line.startsWith('[')) {
-            continue;
-        }
-        const name = line.substring(0, line.indexOf(']') + 1);
-        let at = raw.findIndex((l, i) => i >= from && l.trim().startsWith(name));
-        if (at === -1) {
-            at = from;
-        }
-        from = at + 1;
-        headers.push({ name, line: at + 1 });
-    }
-    return headers;
+    return scanScriptBlocks(splitSourceLines(fs.readFileSync(file, 'utf-8'))).map(b => ({ name: b.name, line: b.line + 1 }));
 }
 
 const capability: ModCapability = {
@@ -82,22 +74,24 @@ const capability: ModCapability = {
     },
 
     // Give every mod script a stable id in the (in-memory) script pack. The
-    // base script.pack in the content dir only ever holds base scripts.
+    // base script.pack in the content dir only ever holds base scripts. A name
+    // that base content or an earlier mod already has keeps its id (override).
     afterRevalidate() {
+        // per mod: name -> where this mod first defined it
         const defined = new Map<string, { file: ModFile; line: number }>();
 
         for (const { file } of staged) {
             for (const { name, line } of scanScriptHeaders(file.path)) {
-                const first = defined.get(name);
-                if (first) {
-                    const where = first.file.mod === file.mod ? `${first.file.relPath}:${first.line}` : `mod ${first.file.mod.name} (${first.file.relPath}:${first.line})`;
-                    throw ModManager.error(file, line, `${name} is already defined by ${where}`);
+                if (name.startsWith('[command,')) {
+                    throw ModManager.error(file, line, `${name}: command signatures belong to the engine (scripts/engine.rs2) and cannot be defined by mods`);
                 }
-                defined.set(name, { file, line });
 
-                if (ModManager.isBaseName(ScriptPack, name)) {
-                    throw ModManager.error(file, line, `${name} is already defined by base content (replacing base scripts is not supported by this capability)`);
+                const key = `${file.mod.name}\n${name}`;
+                const first = defined.get(key);
+                if (first) {
+                    throw ModManager.error(file, line, `${name} is already defined by this mod (${first.file.relPath}:${first.line})`);
                 }
+                defined.set(key, { file, line });
 
                 ModManager.registerName('script', ScriptPack, name);
             }

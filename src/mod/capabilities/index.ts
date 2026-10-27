@@ -23,6 +23,7 @@ ModManager.register((await import('#/mod/capabilities/spawns.js')).default);
 ModManager.register((await import('#/mod/capabilities/init.js')).default);
 
 // ---- slot A: script overrides and partial config patching ----
+ModManager.register((await import('#/mod/capabilities/script-overrides.js')).default);
 
 // ---- slot B: interfaces (.if) and sprites ----
 

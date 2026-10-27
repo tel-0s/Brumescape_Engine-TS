@@ -1,0 +1,3 @@
+// base [proc,count_questpoints]()(int) is called by base content: the signature must stay
+[proc,count_questpoints](int $extra)(int)
+return($extra);

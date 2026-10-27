@@ -1,0 +1,3 @@
+// the original of a proc is a proc: it cannot be jumped to
+[proc,update_questlist]
+@original_proc_update_questlist;

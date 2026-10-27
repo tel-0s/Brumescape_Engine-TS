@@ -1,0 +1,3 @@
+// a new proc replaces nothing, so it has no original
+[proc,noorig_helper]
+~original_proc_noorig_helper;

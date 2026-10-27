@@ -86,7 +86,7 @@ export async function generateServerSymbols() {
     // their symbols from the in-memory Pack (id -> name), falling back to disk.
     // (Typed configs like varp/varn/vars/param/inv are not yet injectable
     // because their symbol files carry extra type/protect columns.)
-    const { NpcPack, ObjPack, LocPack, SeqPack, SpotAnimPack, IdkPack, EnumPack, StructPack, HuntPack, MesAnimPack, VarpPack, VarnPack, VarsPack, ParamPack, InvPack, ScriptPack } = await import('#tools/pack/PackFile.js');
+    const { NpcPack, ObjPack, LocPack, SeqPack, SpotAnimPack, IdkPack, EnumPack, StructPack, HuntPack, MesAnimPack, VarpPack, VarnPack, VarsPack, ParamPack, InvPack, ScriptPack, SynthPack, CategoryPack, DbTablePack, DbRowPack } = await import('#tools/pack/PackFile.js');
     fs.writeFileSync('data/symbols/npc.sym', symbolsFromPack(NpcPack, `${Environment.BUILD_SRC_DIR}/pack/npc.pack`));
     fs.writeFileSync('data/symbols/obj.sym', symbolsFromPack(ObjPack, `${Environment.BUILD_SRC_DIR}/pack/obj.pack`));
     fs.writeFileSync('data/symbols/loc.sym', symbolsFromPack(LocPack, `${Environment.BUILD_SRC_DIR}/pack/loc.pack`));
@@ -163,23 +163,10 @@ export async function generateServerSymbols() {
         return `${id}\t${name}\t${config.getType()}\n`;
     }));
 
-    let synthSymbols = '';
-    const synths = loadPack(`${Environment.BUILD_SRC_DIR}/pack/synth.pack`);
-    for (let i = 0; i < synths.length; i++) {
-        synthSymbols += `${i}\t${synths[i]}\n`;
-    }
-    fs.writeFileSync('data/symbols/synth.sym', synthSymbols);
-
-    let categorySymbols = '';
-    const categories = loadPack(`${Environment.BUILD_SRC_DIR}/pack/category.pack`);
-    for (let i = 0; i < categories.length; i++) {
-        if (!categories[i]) {
-            continue;
-        }
-
-        categorySymbols += `${i}\t${categories[i]}\n`;
-    }
-    fs.writeFileSync('data/symbols/category.sym', categorySymbols);
+    // synth, category, script, dbtable and dbrow symbols come from the
+    // in-memory Packs (base content plus any names registered by mods)
+    fs.writeFileSync('data/symbols/synth.sym', symbolsFromPack(SynthPack, `${Environment.BUILD_SRC_DIR}/pack/synth.pack`));
+    fs.writeFileSync('data/symbols/category.sym', symbolsFromPack(CategoryPack, `${Environment.BUILD_SRC_DIR}/pack/category.pack`));
 
     // in-memory ScriptPack: base content/pack/script.pack plus mod script names
     fs.writeFileSync('data/symbols/runescript.sym', symbolsFromPack(ScriptPack, `${Environment.BUILD_SRC_DIR}/pack/script.pack`));
@@ -251,13 +238,9 @@ export async function generateServerSymbols() {
 
     let dbTableSymbols = '';
     let dbColumnSymbols = '';
-    const dbtables = loadPack(`${Environment.BUILD_SRC_DIR}/pack/dbtable.pack`);
-    for (let i = 0; i < dbtables.length; i++) {
-        if (!dbtables[i]) {
-            continue;
-        }
-
-        dbTableSymbols += `${i}\t${dbtables[i]}\n`;
+    const dbtables = Array.from(DbTablePack.pack.entries()).sort((a, b) => a[0] - b[0]);
+    for (const [i, name] of dbtables) {
+        dbTableSymbols += `${i}\t${name}\n`;
 
         const table = DbTableType.get(i);
         for (let column = 0; column < table.columnNames.length; column++) {
@@ -277,16 +260,7 @@ export async function generateServerSymbols() {
     fs.writeFileSync('data/symbols/dbtable.sym', dbTableSymbols);
     fs.writeFileSync('data/symbols/dbcolumn.sym', dbColumnSymbols);
 
-    let dbRowSymbols = '';
-    const dbrows = loadPack(`${Environment.BUILD_SRC_DIR}/pack/dbrow.pack`);
-    for (let i = 0; i < dbrows.length; i++) {
-        if (!dbrows[i]) {
-            continue;
-        }
-
-        dbRowSymbols += `${i}\t${dbrows[i]}\n`;
-    }
-    fs.writeFileSync('data/symbols/dbrow.sym', dbRowSymbols);
+    fs.writeFileSync('data/symbols/dbrow.sym', symbolsFromPack(DbRowPack, `${Environment.BUILD_SRC_DIR}/pack/dbrow.pack`));
 
     const playerStats = Array.from(PlayerStatMap.entries())
         .sort((a, b) => a[1] - b[1])

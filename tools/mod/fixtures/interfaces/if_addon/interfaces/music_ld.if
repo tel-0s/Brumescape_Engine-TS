@@ -1,0 +1,11 @@
+// Replaces a base side overlay without repeating type=overlay: the
+// replacement keeps the base interface's properties it does not set
+[if_tip]
+type=text
+x=10
+y=10
+width=150
+height=14
+font=p12
+text=Music (modded)
+colour=0xFF981F

@@ -1,0 +1,13 @@
+// A second quest mod: its entry lands below if_base's
+[if_quest2]
+layer=com_0
+type=text
+x=10
+y=end+2
+width=120
+height=14
+buttontype=normal
+font=p12
+shadowed=yes
+text=Fixture Quest II
+colour=0xFF0000

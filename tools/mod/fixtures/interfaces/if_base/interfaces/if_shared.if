@@ -1,0 +1,9 @@
+// if_addon replaces this whole interface (later mod wins)
+[old_only]
+type=text
+x=0
+y=0
+width=100
+height=14
+font=p12
+text=From if_base

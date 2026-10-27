@@ -1,0 +1,16 @@
+// Add an entry at the end of the quest list and rename its title
+[if_quest]
+layer=com_0
+type=text
+x=10
+y=end+2
+width=120
+height=14
+buttontype=normal
+font=p12
+shadowed=yes
+text=Fixture Quest
+colour=0xFF0000
+
+[com_1]
+text=Quest Journal (modded)

@@ -1,0 +1,10 @@
+[if_button,questlist:if_quest]
+~if_fixture_open_journal("Fixture Quest");
+
+[proc,if_fixture_open_journal](string $title)
+if_settext(if_journal:title, $title);
+if_setcolour(questlist:if_quest, ^yellow_rgb);
+if_openmain(if_journal);
+
+[if_button,if_journal:ok]
+if_close;

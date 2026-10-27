@@ -1,0 +1,19 @@
+// Replaces a base interface: keeps com_0 (new text), drops com_1..com_3, adds if_note
+[com_0]
+type=text
+x=181
+y=8
+width=134
+height=14
+font=p12
+shadowed=yes
+text=Misthalin (modded)
+colour=0x00FFFF
+
+[if_note]
+type=graphic
+x=10
+y=10
+width=24
+height=24
+graphic=if_badge,0

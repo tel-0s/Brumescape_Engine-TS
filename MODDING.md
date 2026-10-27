@@ -152,7 +152,14 @@ You write names everywhere: `model1=my_model`, `0 30 30: my_tree`,
   is lost, names can get other ids, and old saves then point at the wrong
   items and varps.
 - The ids of a removed mod stay reserved in `idmap.json`, so a later mod
-  never reuses them. This leaves gaps in the ids, which are harmless.
+  never reuses them. This leaves gaps in the ids; the build packs an empty
+  config (or a placeholder texture) for each one.
+- New base content never takes a mod id: when base content gets a new
+  config or script, the build gives it an id after every id in
+  `idmap.json`. Only a hand-written line in `content/pack/<kind>.pack` can
+  take a mod id. For a varp, inv or obj (saves store these ids) the build
+  then stops and names a free id; for any other kind the mod name moves to a
+  new id with a warning.
 - Mod ids depend on the install: two servers with different mods give
   different ids to the same name. **Never write a numeric id for something
   that a mod defines.** Use the name.
@@ -1576,9 +1583,9 @@ and play it. The build log shows the overrides, for example
 ### Build
 
 - `bun run build` packs base content and every enabled mod. When any file of
-  an enabled mod changes, or a mod is added, removed, enabled or disabled,
-  the next build repacks everything mods can affect. So removed content
-  really disappears.
+  an enabled mod changes, a mod is added, removed, enabled or disabled, or
+  `idmap.json` changes, the next build repacks everything mods can affect.
+  So removed content really disappears.
 - `bun run mod validate <name>` builds base content plus only that mod and
   its dependencies. It uses a copy of `idmap.json`, so it never changes your
   ids. Afterwards, `data/pack` holds that build: run `bun run build` again.

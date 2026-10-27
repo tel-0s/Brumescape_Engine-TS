@@ -76,6 +76,15 @@ function validateImagePack(pack: PackFile, path: string, ext: string): void {
     pack.save();
 }
 
+// The id for the next new base name of a pack: after base content and after
+// every id that mods/idmap.json keeps for mod names of the same kind (the
+// idmap kind is the pack type). Mod ids follow base content, so without this
+// a new base name would take the first mod id, and player saves that hold
+// that mod varp or obj would point at the base name.
+function nextBaseId(pack: PackFile): number {
+    return Math.max(pack.max, ModManager.reservedIdEnd(pack.type));
+}
+
 function validateConfigPack(pack: PackFile, ext: string, transmitted: boolean = false): void {
     const names = crawlConfigNames(ext);
     const configNames = new Set(names);
@@ -83,9 +92,13 @@ function validateConfigPack(pack: PackFile, ext: string, transmitted: boolean = 
     pack.load(`${Environment.BUILD_SRC_DIR}/pack/${pack.type}.pack`);
 
     if (!transmitted || (!Environment.BUILD_VERIFY && transmitted)) {
+        let next = -1;
         for (let i = 0; i < names.length; i++) {
             if (!pack.names.has(names[i])) {
-                pack.register(pack.max++, names[i]);
+                if (next === -1) {
+                    next = nextBaseId(pack);
+                }
+                pack.register(next++, names[i]);
             }
         }
 
@@ -194,9 +207,13 @@ function regenScriptPack(pack: PackFile) {
         }
     }
     pack.refreshNames();
+    let next = -1;
     for (let i = 0; i < names.length; i++) {
         if (!pack.names.has(names[i])) {
-            pack.register(pack.max++, names[i]);
+            if (next === -1) {
+                next = nextBaseId(pack);
+            }
+            pack.register(next++, names[i]);
         }
     }
     pack.refreshNames();

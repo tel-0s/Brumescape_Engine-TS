@@ -167,6 +167,9 @@ registerName(kind: string, pack: PackFile, name: string): number
     // content dir). Use this; do not call pack.register() for mod names.
 assignId(kind: string, pack: PackFile, name: string): number
     // The idmap.json allocation with the base-occupant guard (see below)
+reservedIdEnd(kind: string): number
+    // One past the highest id idmap.json keeps for `kind`; base packers start
+    // new base names there
 isBaseName(pack: PackFile, name: string): boolean
     // true if `name` comes from base content (not registered by a mod)
 
@@ -239,9 +242,17 @@ Also exported:
   inventories with mod objs) keeps meaning the same thing. The gap that a
   removed mod leaves is packed as an empty config. Packers must accept gaps
   (`configs.get(name)` can be undefined).
-- **Base-occupant guard**: if base content now uses a recorded id for a
-  different name (base content grew), the mod name gets a new id and an error
-  is logged. This breaks saves for that one name only.
+- **Base ids keep clear of mod ids**: the base packers in
+  `tools/pack/PackFile.ts` (`validateConfigPack`, `regenScriptPack`) give a
+  new base name the id `max(pack.max, ModManager.reservedIdEnd(kind))`: after
+  every id that `idmap.json` (and the default `mods/idmap.json`, during a
+  build against another mods dir) keeps for that kind.
+- **Base-occupant guard**: base content can still take a recorded mod id
+  through a hand-written line in `content/pack/<kind>.pack`. For `varp`,
+  `inv` and `obj` (player saves store these ids) the build then stops and
+  says which ids are free. Any other kind gets a new id with a warning, and
+  `forceRebuild` turns on for the rest of the build, so no packed config
+  keeps the old id.
 - Mod names are only in memory. `PackFile.save()` filters them out, and
   `PackFile.load()` resets them. The content dir's `.pack` files only ever
   hold base names.
@@ -275,6 +286,8 @@ mod changes. So `beginBuild()` hashes the mod set:
 - the enabled mods in load order (name, version, dir)
 - every file of every enabled mod (relative path, size, mtime)
 - the loader's own source (`src/mod/**`)
+- `idmap.json` (the stored state uses the copy that `finishBuild()` saved, so
+  a hand edit or a restored copy forces the next build to repack)
 
 It compares the hash with `data/pack/mods/state.json` from the last
 successful build. If they differ, `forceRebuild` is true for the whole build.
@@ -292,7 +305,6 @@ What this means for a capability:
 - Files you add next to base output (for example a new
   `data/pack/server/maps/m60_60`) must be recorded with `recordOutput()`.
   Otherwise they stay behind after the mod is removed.
-- `idmap.json` is not in the fingerprint. After a hand edit, run `bun run clean`.
 
 ## BUILD_VERIFY
 

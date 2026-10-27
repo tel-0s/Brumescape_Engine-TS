@@ -33,6 +33,16 @@ interface IdMapEntry {
 
 type HookName = 'prepare' | 'beforeRevalidate' | 'afterRevalidate' | 'beforeSymbols' | 'afterSymbols' | 'afterCompile';
 
+// idmap kinds whose ids player saves store (Player.save: varp values, inventory
+// types, the objs in them). Moving such a mod name to another id would give
+// its saved values to whatever takes the old id, so the build stops instead.
+const SAVED_KINDS = new Set(['varp', 'inv', 'obj']);
+
+// The mods dir of a normal install. Base packers also keep clear of its
+// idmap.json during builds against another mods dir (fixtures, validate), so
+// such a build never gives a new base name an id the real mods use.
+const DEFAULT_MODS_DIR = 'mods';
+
 class ModManager {
     // Enabled mods in load order
     mods: Mod[] = [];
@@ -59,6 +69,7 @@ class ModManager {
     // Every shouldBuild*() check in tools/pack/PackFile.ts returns true then.
     forceRebuild = false;
     private fingerprint: string | null = null;
+    private modsFingerprint: string | null = null;
     private outputs: Set<string> = new Set();
 
     get idMapPath(): string {
@@ -138,7 +149,8 @@ class ModManager {
         // differs, delete the outputs mods recorded last time and force every
         // incremental stage to repack. This is generic: any packer that uses
         // the shouldBuild* helpers is covered.
-        this.fingerprint = this.computeFingerprint();
+        this.modsFingerprint = this.computeModsFingerprint();
+        this.fingerprint = this.fingerprintWithIdMap(this.modsFingerprint);
         const state = this.readState();
         this.forceRebuild = state === null || state.fingerprint !== this.fingerprint;
         this.outputs = new Set(state?.outputs ?? []);
@@ -153,11 +165,16 @@ class ModManager {
             fs.rmSync(this.statePath, { force: true });
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        const manager = this;
         this.ctx = {
             mods: this.mods,
             modelFlags,
             cache: null,
-            forceRebuild: this.forceRebuild
+            // a getter: assignId() can still force a full repack during afterRevalidate
+            get forceRebuild() {
+                return manager.forceRebuild;
+            }
         };
 
         await this.runHook('prepare');
@@ -167,6 +184,9 @@ class ModManager {
     // Called at the end of a successful packServer()
     finishBuild() {
         this.saveIdMap();
+        if (this.modsFingerprint !== null) {
+            this.fingerprint = this.fingerprintWithIdMap(this.modsFingerprint);
+        }
         this.writeState();
         this.forceRebuild = false;
         this.ctx = null;
@@ -174,10 +194,23 @@ class ModManager {
 
     // Hash of everything that decides what mods contribute to a build: the mods
     // dir, the enabled mods in load order, every file in each enabled mod
-    // (relative path, size, mtime) and the mod loader's own source
-    // (src/mod/**). idmap.json is not included: it only changes as a result of
-    // a build (hand edits need `bun run clean`).
+    // (relative path, size, mtime), the mod loader's own source (src/mod/**)
+    // and idmap.json. idmap.json changes during a build, so finishBuild()
+    // stores the fingerprint with the saved idmap.json: a later change to it
+    // (a hand edit, a restored copy) forces a full repack, because packed
+    // configs hold mod ids.
     computeFingerprint(): string {
+        return this.fingerprintWithIdMap(this.computeModsFingerprint());
+    }
+
+    private fingerprintWithIdMap(modsFingerprint: string): string {
+        const hash = crypto.createHash('sha256');
+        hash.update(`mods\t${modsFingerprint}\n`);
+        hash.update(`idmap\t${fs.existsSync(this.idMapPath) ? fs.readFileSync(this.idMapPath, 'utf-8') : ''}\n`);
+        return hash.digest('hex');
+    }
+
+    private computeModsFingerprint(): string {
         const hash = crypto.createHash('sha256');
         hash.update(`mods-dir\t${path.resolve(this.modsDir)}\n`);
 
@@ -371,8 +404,15 @@ class ModManager {
 
     // Stable id for a new name of the given kind ('npc', 'model', 'script', ...).
     // Reuses the id recorded in idmap.json; otherwise assigns the next id after
-    // base content and earlier mod ids. If base content now occupies the
-    // recorded id with a different name, the name is reassigned (and logged).
+    // base content and earlier mod ids.
+    //
+    // Base packers give new base names ids after reservedIdEnd(), so base
+    // content only takes a recorded mod id through a hand-written line in
+    // content/pack/<kind>.pack. Then, for a kind that player saves store
+    // (varp, inv, obj), the build stops: moving the mod name would hand its
+    // saved values to the base name. Any other kind is moved to a new id
+    // (warning), and the whole build repacks, so no packed config keeps the
+    // old id.
     assignId(kind: string, pack: PackFile, name: string): number {
         this.loadIdMap();
 
@@ -386,10 +426,20 @@ class ModManager {
         let id = entry.ids[name];
         const occupant = id !== undefined ? pack.pack.get(id) : undefined;
         if (id === undefined || (occupant !== undefined && occupant !== name)) {
+            const free = Math.max(pack.max, entry.next);
             if (id !== undefined) {
-                printError(`[mods] ${kind} id ${id} (${name}) is already used by '${occupant}' (base content changed?). Reassigning.`);
+                const where = `${Environment.BUILD_SRC_DIR}/pack/${pack.type}.pack`;
+                if (SAVED_KINDS.has(kind)) {
+                    throw new Error(
+                        `[mods] ${this.idMapPath} gives ${kind} id ${id} to the mod name '${name}', but base content now uses that id for '${occupant}' (${where}). ` +
+                            `Player saves store ${kind} ids, so moving '${name}' would give its saved values to '${occupant}'. ` +
+                            `Give '${occupant}' a free id in ${where} (${free} is free), or, if no player save holds '${name}', delete its line from ${this.idMapPath} to give it a new id.`
+                    );
+                }
+                printWarning(`[mods] ${kind} id ${id} (${name}) is now used by base content for '${occupant}' (${where}). Moving ${name} to id ${free} and repacking everything.`);
+                this.forceRebuild = true;
             }
-            id = Math.max(pack.max, entry.next);
+            id = free;
             entry.ids[name] = id;
             this.idMapDirty = true;
         }
@@ -400,6 +450,37 @@ class ModManager {
         }
 
         return id;
+    }
+
+    // One past the highest id that idmap.json keeps for `kind`, for enabled,
+    // disabled and removed mods alike (0 when there is none). Base packers
+    // (tools/pack/PackFile.ts) give new base names ids from here on, so base
+    // content never takes an id that a mod name has. The idmap.json of the
+    // default mods dir counts too, when a build uses another mods dir.
+    reservedIdEnd(kind: string): number {
+        this.loadIdMap();
+        const maps = [this.idMap!];
+        const defaultPath = path.join(DEFAULT_MODS_DIR, 'idmap.json');
+        if (path.resolve(defaultPath) !== path.resolve(this.idMapPath) && fs.existsSync(defaultPath)) {
+            try {
+                maps.push(JSON.parse(fs.readFileSync(defaultPath, 'utf-8')) as Record<string, IdMapEntry>);
+            } catch (_err) {
+                // a broken default idmap.json is reported by the build that uses it
+            }
+        }
+
+        let end = 0;
+        for (const map of maps) {
+            const entry = map[kind];
+            if (!entry) {
+                continue;
+            }
+            end = Math.max(end, entry.next ?? 0);
+            for (const id of Object.values(entry.ids ?? {})) {
+                end = Math.max(end, id + 1);
+            }
+        }
+        return end;
     }
 
     // Register a mod name into a PackFile and return its id. If the name

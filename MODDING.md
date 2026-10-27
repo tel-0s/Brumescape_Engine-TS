@@ -202,6 +202,10 @@ op1=Talk-to
 - Mod configs use the same parser as base content. You can use base and mod
   constants (`^name`) and refer to base or mod names (models, seqs, params,
   categories and so on).
+- A comment (`//`) must be on its own line, in configs, patches and
+  interfaces. Text after a value is part of the value: `name=Bob // a name`
+  sets the name to `Bob // a name`. (Map files and scripts allow comments at
+  the end of a line.)
 - A varp that must be saved with the player needs `scope=perm`.
 - A config with a base name replaces the whole base config, so give every
   key that you need. To change only some keys, use a patch.
@@ -216,12 +220,18 @@ config type that mods can add can also be patched.
 ```
 // mods/MyQuest/config/patch/npcs.npc
 [man]
-name=Bob                // set: replaces the name
-op3=Steal-from          // numbered keys are separate keys: only op3 changes
--op2                    // remove: the Attack option goes away
-param=stabdefence,5     // list key: replaces the stabdefence entry
-param=myquest_flag,1    // list key: adds an entry (no myquest_flag yet)
--param=slashdefence     // removes one entry of a list key
+// set: replaces the name
+name=Bob
+// numbered keys are separate keys: only op3 changes
+op3=Steal-from
+// remove: the Attack option goes away
+-op2
+// list key: replaces the stabdefence entry
+param=stabdefence,5
+// list key: adds an entry (no myquest_flag yet)
+param=myquest_flag,1
+// removes one entry of a list key
+-param=slashdefence
 ```
 
 | Line | Effect |
@@ -321,8 +331,9 @@ colour=0x2E5A2A
 [island_path]
 overlay=yes
 colour=0x7A5C3A
-texture=planks      // optional: a base or mod texture
-occlude=no          // optional
+// optional: a base or mod texture, and occlusion
+texture=planks
+occlude=no
 ```
 
 - Keys: `colour` (0xRRGGBB), `overlay` (`yes` = overlay floor, otherwise
@@ -699,7 +710,8 @@ Use this to add frames for base npcs or for players. Find the skeleton with
 [critter_walk]
 frame1=critter_walk_1
 frame2=critter_walk_2
-delay2=3          // optional: overrides the frame's own delay
+// optional: overrides the frame's own delay
+delay2=3
 
 [critter]
 model1=critter
@@ -772,11 +784,12 @@ font=q8
 text=My Quest
 colour=0x800000
 
+// y=end+4: 4 px below the previous component in the same layer
 [entry1]
 layer=frame
 type=text
 x=10
-y=end+4        // 4 px below the previous component in the same layer
+y=end+4
 width=410
 height=14
 font=p12

@@ -579,8 +579,11 @@ optional `meta/<name>.opt` next to the PNG holds a crop box
   example `bark`) replaces that texture.
 - Models use textures through `map_Kd` in an OBJ material, and floors through
   `texture=<name>`.
-- The Brumescape web client holds up to 256 textures (base content uses 50).
-  A floor's texture id must be 255 or less.
+- The Brumescape web client holds up to 256 textures (ids 0-255; base content
+  uses 50). A texture that gets id 256 or higher stops the build. The ids that
+  `idmap.json` keeps for disabled and removed mods count too.
+- An id that `idmap.json` keeps for a mod that is not enabled gets a plain
+  grey 64 x 64 placeholder texture, so the ids stay contiguous.
 
 ## Animations
 
@@ -948,8 +951,11 @@ screen sprites.
 
 **Limits**: the media index is limited to 64 KB. Base content uses about
 7 KB, and each sprite adds about 3 bytes per colour plus 7 bytes per tile.
-With the Brumescape client, `mapfunction` and `mapscene` sheets can have up
-to 256 tiles.
+The client itself reads a fixed number of tiles from some base sheets:
+`mapfunction` and `mapscene` 256 (with the Brumescape client), `sideicons`
+13, `hitmarks` and `headicons` 20, `cross` 8 and `mod_icons` 2. A
+replacement with more tiles gives a build warning: the extra tiles show only
+in interfaces (`graphic=<name>,<index>`).
 
 **Check your interfaces and sprites**:
 
@@ -1632,7 +1638,9 @@ and `mapscene` tiles (256 instead of 50), and animation frame ids above
 
 `tools/mod/fixtures/` holds test mods for every capability. A fixture is a
 mods folder plus a `check.ts` that reads the build output back, or an
-`expect-fail.txt` with the errors that the build must print.
+`expect-fail.txt` with the errors that the build must print. An optional
+`seed-idmap.json` is copied to the fixture's `idmap.json` before each build,
+for fixed ids (for example an id kept for a disabled mod).
 
 ```sh
 bun run mod:fixture integration           # one fixture
@@ -1681,7 +1689,8 @@ Format limits:
 - Ids are numbered after base content. Mods must not use high id ranges.
 - Floors: underlay flo ids up to 173 and overlay up to 254 (about 85 new
   underlay floors across all mods). A floor texture id must be 255 or less.
-- Textures: 256 in the Brumescape client (50 used by base content).
+- Textures: 256 in the Brumescape client (ids 0-255, 50 used by base
+  content). The build stops at id 256.
 - Models: at most 4096 vertices and 4096 faces (keep it under 2000 faces),
   and at most 255 texture mappings. Vertex labels 0-255.
 - Animations: a base has at most 255 groups, a group at most 255 labels.

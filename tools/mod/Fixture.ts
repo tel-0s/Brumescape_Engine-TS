@@ -10,6 +10,8 @@
 //                    non-zero to fail. Use the readers in tools/mod/Inspect.ts.
 //   expect-fail.txt  the build must FAIL, and its output must contain every
 //                    non-empty line of this file
+//   seed-idmap.json  copied to idmap.json before every build, for fixed ids
+//                    (e.g. an id kept for a disabled mod)
 // The fixture's idmap.json is written inside the fixture dir (gitignored).
 //
 // The build writes data/pack like any build: run `bun run build` afterwards to
@@ -47,6 +49,11 @@ function run(command: string[], env: NodeJS.ProcessEnv, verbose: boolean): { sta
 function runFixture(dir: string, verbose: boolean): boolean {
     const name = path.basename(dir);
     console.log(`\n=== fixture ${name} (BUILD_MODS_DIR=${dir}) ===`);
+
+    const seed = path.join(dir, 'seed-idmap.json');
+    if (fs.existsSync(seed)) {
+        fs.copyFileSync(seed, path.join(dir, 'idmap.json'));
+    }
 
     const env = { ...process.env, BUILD_MODS_DIR: dir, BUILD_STARTUP_UPDATE: 'false' };
     const build = run(['bun', 'run', 'tools/pack/Build.ts'], env, verbose);

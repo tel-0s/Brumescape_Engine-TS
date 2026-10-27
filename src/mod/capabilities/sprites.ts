@@ -44,6 +44,19 @@ export interface SpriteShape {
     tileH: number;
 }
 
+// Sheets that the client itself reads tile by tile into fixed arrays
+// (Client.ts in Brumescape_Client-TS). It never reads tiles past these
+// counts; interfaces can still show any tile with graphic=<name>,<index>.
+const CLIENT_SHEET_TILES: Record<string, { tiles: number; use: string }> = {
+    mapscene: { tiles: 256, use: 'loc mapscene= icons' },
+    mapfunction: { tiles: 256, use: 'loc mapfunction= icons' },
+    sideicons: { tiles: 13, use: 'the side tab icons' },
+    hitmarks: { tiles: 20, use: 'hit splats' },
+    headicons: { tiles: 20, use: 'head icons' },
+    cross: { tiles: 8, use: 'the click cross' },
+    mod_icons: { tiles: 2, use: 'chat crowns' }
+};
+
 // Sprites in content/sprites: name -> shape (from its meta .opt)
 let baseSprites: Map<string, SpriteShape & { opt: string[] | null }> | null = null;
 // Sprites mods add or replace in this build: name -> shape
@@ -283,6 +296,10 @@ const capability: ModCapability = {
             }
 
             const shape = await stageSprite(file, root);
+            const sheet = CLIENT_SHEET_TILES[name];
+            if (sheet && shape.tiles > sheet.tiles) {
+                ModManager.warn(file, null, `sprite ${name} has ${shape.tiles} tiles, but the client reads only the first ${sheet.tiles} for ${sheet.use}. Interfaces can still show the others (graphic=${name},<index>).`);
+            }
             modSprites.set(name, { ...shape, file });
             ModManager.setAsset('sprite', name, path.join(root, `${name}.png`));
         }

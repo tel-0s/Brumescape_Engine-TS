@@ -424,7 +424,7 @@ function validateMod(name: string | undefined) {
         if (result.status === 0) {
             console.log(kleur.green(`\n${name} builds with base content${others.length ? ' and its dependencies' : ''}.`));
         } else {
-            console.log(kleur.red(`\n${name} does not build: see the first [mod ...] error above.`));
+            console.log(kleur.red(`\n${name} does not build: see the first error above.`));
             process.exitCode = 1;
         }
         console.log(kleur.gray('data/pack now holds this validation build. Run `bun run build` to build every enabled mod again.'));

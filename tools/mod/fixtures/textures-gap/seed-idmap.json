@@ -1,0 +1,9 @@
+{
+    "texture": {
+        "next": 52,
+        "ids": {
+            "gap_low_tex": 50,
+            "gap_high_tex": 51
+        }
+    }
+}

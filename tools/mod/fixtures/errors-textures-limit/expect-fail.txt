@@ -1,0 +1,1 @@
+[mod tex_limit] textures/tex_256.png: texture tex_256 got id 256, but the client holds only 256 textures (ids 0-255)

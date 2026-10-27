@@ -1,0 +1,3 @@
+// patch_demo already renamed man to Bob; this later patch wins for name only
+[man]
+name=Robert

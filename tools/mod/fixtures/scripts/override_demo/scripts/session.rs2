@@ -1,0 +1,26 @@
+[login,_]
+mes("The override demo mod is installed.");
+@original_login__;
+
+// [logout,_] returns a value, so its original is a proc
+[logout,_]()(boolean)
+if (%override_demo_stage = 1) {
+    mes("You still have not found the cat.");
+}
+return(~original_logout__);
+
+// The base block does not jump to labels, so it can be called as a proc:
+// the base behaviour runs first, then the rest of this script.
+[opheld1,thkebabinstructs]
+~original_opheld1_thkebabinstructs;
+mes("You fold the instructions away.");
+
+// Both forms of one original: @ (a label, the renamed base block) and ~ (a
+// proc copy of the block). [opnpc3,zaff] does not jump to labels.
+[opnpc3,zaff]
+if (%override_demo_stage = 1) {
+    ~original_opnpc3_zaff;
+    mes("Zaff winks at you.");
+    return;
+}
+@original_opnpc3_zaff;

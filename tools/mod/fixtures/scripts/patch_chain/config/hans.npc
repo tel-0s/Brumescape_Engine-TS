@@ -1,0 +1,15 @@
+// A full definition replaces base hans entirely, including patch_demo's patch
+[hans]
+name=Hans (replaced)
+desc=Servant of the Duke of Lumbridge.
+walkanim=human_walk_f,human_walk_b,human_walk_l,human_walk_r
+readyanim=human_ready
+op1=Talk-to
+model1=model_217_idk
+model2=model_246_idk
+model3=model_292_idk
+model4=model_151_idk
+model5=model_176_idk
+model6=model_254_idk
+model7=model_181_idk
+head1=model_55_idk_head

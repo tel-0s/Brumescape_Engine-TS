@@ -113,7 +113,17 @@ export async function generateServerSymbols() {
     let comSymbols = '';
     let interfaceSymbols = '';
     let overlaySymbols = '';
-    const coms = loadPack(`${Environment.BUILD_SRC_DIR}/pack/interface.pack`);
+    // in-memory InterfacePack: base content plus mod interfaces and components
+    // (src/mod/capabilities/interfaces.ts); the on-disk pack when it is empty
+    const { InterfacePack } = await import('#tools/pack/PackFile.js');
+    let coms: string[] = [];
+    if (InterfacePack.pack.size > 0) {
+        for (const [id, name] of InterfacePack.pack) {
+            coms[id] = name;
+        }
+    } else {
+        coms = loadPack(`${Environment.BUILD_SRC_DIR}/pack/interface.pack`);
+    }
     for (let i = 0; i < coms.length; i++) {
         if (!coms[i] || coms[i] === 'null:null') {
             continue;

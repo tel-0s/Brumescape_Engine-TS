@@ -1,8 +1,11 @@
+import fs from 'fs';
+
 import Packet from '#/io/Packet.js';
 import Environment from '#/util/Environment.js';
 import { printError } from '#/util/Logger.js';
 import { loadDir, loadOrder } from '#tools/pack/NameMap.js';
 import { InterfacePack, ModelPack, ObjPack, SeqPack, VarpPack } from '#tools/pack/PackFile.js';
+import ModManager from '#/mod/ModManager.js';
 
 function nameToType(name: string) {
     switch (name) {
@@ -159,13 +162,46 @@ type Component = {
     src: Record<string, string | number>;
 };
 
+// Mod interfaces and components (src/mod/capabilities/interfaces.ts) have ids
+// after base content and are not in interface.order. Insert each one right
+// after the last entry of its interface (new interfaces go at the end), so the
+// archive keeps components grouped by interface.
+function withModIds(baseOrder: number[], component: Record<number, Component>): number[] {
+    const modIds = Array.from(InterfacePack.modNames, name => InterfacePack.getByName(name)).sort((a, b) => a - b);
+    if (modIds.length === 0) {
+        return baseOrder;
+    }
+
+    const rootOf = (id: number) => component[id].root ?? InterfacePack.getById(id);
+    const extra = new Map<string, number[]>();
+    for (const id of modIds) {
+        if (component[id].root === null && InterfacePack.getById(id).includes(':')) {
+            throw new Error(`Interface component ${InterfacePack.getById(id)} (${id}) is registered by a mod but not defined in any interface`);
+        }
+        const root = rootOf(id);
+        extra.set(root, [...(extra.get(root) ?? []), id]);
+    }
+
+    const order: number[] = [];
+    for (let i = 0; i < baseOrder.length; i++) {
+        order.push(baseOrder[i]);
+        const root = rootOf(baseOrder[i]);
+        if (i + 1 === baseOrder.length || rootOf(baseOrder[i + 1]) !== root) {
+            order.push(...(extra.get(root) ?? []));
+            extra.delete(root);
+        }
+    }
+    for (const ids of extra.values()) {
+        order.push(...ids);
+    }
+    return order;
+}
+
 export function packInterface(modelFlags: number[]) {
     const component: Record<number, Component> = {};
 
-    const interfaceOrder = loadOrder(`${Environment.BUILD_SRC_DIR}/pack/interface.order`);
-    for (let i = 0; i < interfaceOrder.length; i++) {
-        const id = interfaceOrder[i];
-
+    const baseOrder = loadOrder(`${Environment.BUILD_SRC_DIR}/pack/interface.order`);
+    for (const id of [...baseOrder, ...Array.from(InterfacePack.modNames, name => InterfacePack.getByName(name))]) {
         component[id] = {
             root: null,
             children: [],
@@ -173,7 +209,34 @@ export function packInterface(modelFlags: number[]) {
         };
     }
 
+    // A mod's version of an interface (new, replaced or patched; see
+    // src/mod/capabilities/interfaces.ts) is read instead of the base file.
+    // It is staged as Latin-1, the character set pjstr writes.
+    const modSource = (ifName: string) => {
+        const file = ModManager.getAsset('interface', ifName);
+        if (!file) {
+            return null;
+        }
+        return fs
+            .readFileSync(file, 'latin1')
+            .replace(/\r/g, '')
+            .split('\n')
+            .filter(x => x);
+    };
+    const parsed = new Set<string>();
     loadDir(`${Environment.BUILD_SRC_DIR}/scripts`, '.if', (src, file) => {
+        parsed.add(file.replace('.if', ''));
+        parseInterface(modSource(file.replace('.if', '')) ?? src, file);
+    });
+    for (const ifName of ModManager.getAssets('interface').keys()) {
+        if (!parsed.has(ifName)) {
+            parseInterface(modSource(ifName)!, `${ifName}.if`);
+        }
+    }
+
+    const interfaceOrder = withModIds(baseOrder, component);
+
+    function parseInterface(src: string[], file: string) {
         const ifName = file.replace('.if', '');
         const ifId = InterfacePack.getByName(ifName);
 
@@ -224,7 +287,7 @@ export function packInterface(modelFlags: number[]) {
                 component[ifId].src[key] = value;
             }
         }
-    });
+    }
 
     // ----
 

@@ -1,0 +1,5 @@
+{
+    "name": "bad_spawns",
+    "version": "1.0.0",
+    "description": "spawns.json with an obj that does not exist"
+}

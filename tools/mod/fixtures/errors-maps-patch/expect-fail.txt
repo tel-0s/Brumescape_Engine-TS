@@ -1,0 +1,1 @@
+[mod bad_patch] maps/m50_50.patch.jm2:3: '-0 10 10: man' matches no npc in the square

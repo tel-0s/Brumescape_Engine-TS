@@ -1,0 +1,5 @@
+{
+    "name": "bad_patch",
+    "version": "1.0.0",
+    "description": "A patch that removes an npc the base square does not have"
+}

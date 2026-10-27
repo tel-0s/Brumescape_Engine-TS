@@ -1,0 +1,5 @@
+{
+    "name": "bad_map",
+    "version": "1.0.0",
+    "description": "A new map square that places a loc that does not exist"
+}

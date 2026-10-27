@@ -1,0 +1,5 @@
+// Patch for maps_base's new square m60_50
+==== LOC ====
+0 40 40: tree2 10 1
+==== OBJ ====
+-0 35 35: maps_relic

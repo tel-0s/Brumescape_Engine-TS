@@ -1,0 +1,6 @@
+{
+    "name": "maps_base",
+    "version": "1.0.0",
+    "author": "fixtures",
+    "description": "Maps fixture: a new square, a patch of a base square, zone lists and obj spawns"
+}

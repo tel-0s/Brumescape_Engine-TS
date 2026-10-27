@@ -1,0 +1,6 @@
+// A new loc, placed by name in map squares and patches
+[maps_shrine]
+name=Fixture shrine
+desc=A shrine that only exists in a mod.
+model=model_loc_63
+op1=Pray-at

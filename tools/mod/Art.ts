@@ -439,6 +439,24 @@ async function selftestCommand() {
     }
     report(objOk === meshes, `${objOk}/${meshes} random OBJ meshes convert with exact positions, labels, colours and vertex order`);
 
+    // alpha animations need face labels and an alpha section, even when every
+    // face is opaque (the client skips alpha transforms without one); and a
+    // Blender-style `o <object>` line before the groups needs no label
+    const opaque = 'o Thing\ng body\nv 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\ng head\nv 0 0 1\nf 1 2 4\n';
+    const withLabels = decodeOb2(
+        encodeOb2(
+            convertObj(opaque, 'alpha.obj', {
+                faceLabels: true,
+                labels: new Map([
+                    ['body', 1],
+                    ['head', 2]
+                ]),
+                strictLabels: true
+            }).model
+        )
+    );
+    report(withLabels.faceLabel?.join() === '1,2' && withLabels.faceAlpha?.join() === '0,0', 'faceLabels keeps face labels and an all-opaque alpha section; `o` before `g` needs no label');
+
     if (failures) {
         process.exitCode = 1;
     }

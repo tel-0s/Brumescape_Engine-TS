@@ -40,7 +40,9 @@ export interface ObjOptions {
     // <n> gives label n; otherwise label 0, or an error when `strictLabels`.
     labels?: Map<string, number>;
     strictLabels?: boolean;
-    // write face labels (the label of each face's group), for alpha animations
+    // write face labels (the label of each face's group) and an alpha section
+    // even when every face is opaque, for alpha animations: the client only
+    // applies alpha transforms to a model with both
     faceLabels?: boolean;
     // render priority of every face (0-11, default 0)
     priority?: number;
@@ -399,7 +401,7 @@ export function convertObj(text: string, file: string, options: ObjOptions = {})
     if (!options.faceLabels) {
         model.faceLabel = null;
     }
-    if (model.faceAlpha!.every(a => a === 0)) {
+    if (!options.faceLabels && model.faceAlpha!.every(a => a === 0)) {
         model.faceAlpha = null;
     }
     if (model.faceInfo!.every(info => info === 0)) {

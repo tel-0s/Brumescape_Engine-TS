@@ -1,0 +1,1 @@
+[mod bad_anims] anims/bad.json:8: frame "bad_2": the base has no group named "spin"

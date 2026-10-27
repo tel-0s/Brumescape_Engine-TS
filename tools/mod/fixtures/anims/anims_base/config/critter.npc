@@ -1,0 +1,8 @@
+[anims_critter]
+name=Critter
+desc=A small box critter that walks.
+size=1
+model1=anims_critter
+readyanim=anims_critter_ready
+walkanim=anims_critter_walk
+op2=Attack

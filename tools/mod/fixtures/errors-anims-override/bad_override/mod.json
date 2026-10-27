@@ -1,0 +1,6 @@
+{
+    "name": "bad_override",
+    "version": "1.0.0",
+    "author": "fixtures",
+    "description": "Replaces the base of base animset anim_13 (the rat) without redefining its frames"
+}

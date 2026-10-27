@@ -1,0 +1,4 @@
+{
+    "base": { "groups": [{ "type": "rotate", "labels": [0] }] },
+    "frames": [{ "name": "anim_4178", "delay": 4, "transforms": [[0, 0, 32]] }]
+}

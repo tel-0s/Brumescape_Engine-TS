@@ -1,0 +1,11 @@
+{
+    "base": { "groups": [{ "name": "pivot", "type": "origin", "labels": [] }, { "name": "turn", "type": "rotate", "labels": [1] }] },
+    "delay": 4,
+    "frames": [
+        { "name": "bad_1", "transforms": [["pivot", 0, -20, 0], ["turn", 0, 32]] },
+        { "name": "bad_2", "transforms": [
+            ["pivot", 0, -20, 0],
+            ["spin", 0, 64]
+        ] }
+    ]
+}

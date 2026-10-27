@@ -1,0 +1,7 @@
+{
+    "name": "anims_extra",
+    "version": "1.0.0",
+    "author": "fixtures",
+    "description": "Anims fixture: overrides a frame and a whole animset of anims_base",
+    "dependencies": { "anims_base": "1.0.0" }
+}

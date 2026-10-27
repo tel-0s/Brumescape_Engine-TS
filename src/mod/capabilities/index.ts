@@ -27,6 +27,7 @@ ModManager.register((await import('#/mod/capabilities/init.js')).default);
 // ---- slot B: interfaces (.if) and sprites ----
 
 // ---- slot C: animations (.anim frames/bases) and model authoring ----
+ModManager.register((await import('#/mod/capabilities/anims.js')).default);
 
 // ---- slot D: maps and new lands (.jm2, obj spawns) ----
 

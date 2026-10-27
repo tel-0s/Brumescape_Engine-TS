@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
+import Environment from '#/util/Environment.js';
 import { printError, printInfo, printWarning } from '#/util/Logger.js';
 import type { PackFile } from '#tools/pack/PackFileBase.js';
 import { Mod } from '#/mod/ModTypes.js';
@@ -51,6 +52,7 @@ class ModManager {
     // Per-build state, reset by beginBuild()
     private claims: Map<string, Map<string, ModFile>> = new Map();
     private assets: Map<string, Map<string, string>> = new Map();
+    private touched: Set<string> = new Set();
 
     // True while a build runs after the mod set changed (see beginBuild).
     // Every shouldBuild*() check in tools/pack/PackFile.ts returns true then.
@@ -127,6 +129,7 @@ class ModManager {
 
         this.claims.clear();
         this.assets.clear();
+        this.touched.clear();
 
         // Incremental packing (shouldBuild*) only compares base content
         // mtimes, so it cannot see a mod change. Compare a fingerprint of the
@@ -459,6 +462,30 @@ class ModManager {
     // All assets of a kind (name -> absolute path), e.g. to add mod-only names
     getAssets(kind: string): ReadonlyMap<string, string> {
         return this.assets.get(kind) ?? new Map();
+    }
+
+    // Record that mods changed the packed output of `kind` (a config
+    // extension like '.npc', or '.if', ...) in this build. BUILD_VERIFY then
+    // skips that kind's checksum against unmodified base content.
+    markTouched(kind: string) {
+        this.touched.add(kind);
+    }
+
+    isTouched(kind: string): boolean {
+        return this.touched.has(kind);
+    }
+
+    // Whether BUILD_VERIFY should compare `kind` with the checksum of
+    // unmodified base content: only when it is on and no mod touched `kind`.
+    shouldVerify(kind: string): boolean {
+        if (!Environment.BUILD_VERIFY) {
+            return false;
+        }
+        if (this.touched.has(kind)) {
+            printInfo(`[mods] BUILD_VERIFY: skipping the ${kind} checksum check because mods changed ${kind}`);
+            return false;
+        }
+        return true;
     }
 
     // Engine-local, gitignored scratch space for mod build products

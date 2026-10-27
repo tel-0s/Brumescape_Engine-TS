@@ -107,7 +107,12 @@ const capability: ModCapability = {
             return;
         }
 
-        for (const file of modConfigFiles(extension)) {
+        const files = modConfigFiles(extension);
+        if (files.length > 0) {
+            ModManager.markTouched(extension);
+        }
+
+        for (const file of files) {
             parseConfigLines(splitConfigLines(fs.readFileSync(file.path, 'utf-8')), parse, requiredProperties, {
                 error: (line, message) => ModManager.error(file, line, message),
                 onConfig: (debugname, config) => {

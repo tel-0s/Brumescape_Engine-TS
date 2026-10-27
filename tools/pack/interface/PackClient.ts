@@ -6,6 +6,7 @@ import Packet from '#/io/Packet.js';
 import Environment from '#/util/Environment.js';
 import { packInterface } from '#tools/pack/interface/PackShared.js';
 import { shouldBuild } from '#tools/pack/PackFile.js';
+import ModManager from '#/mod/ModManager.js';
 
 export function packClientInterface(cache: FileStream, modelFlags: number[]) {
     const jag = Jagfile.new(true);
@@ -16,7 +17,8 @@ export function packClientInterface(cache: FileStream, modelFlags: number[]) {
     ) {
         const { client, server } = packInterface(modelFlags);
 
-        if (Environment.BUILD_VERIFY && !Packet.checkcrc(client.data, 0, client.pos, 587792799)) {
+        // skipped (with an info line) when mods changed interfaces
+        if (ModManager.shouldVerify('.if') && !Packet.checkcrc(client.data, 0, client.pos, 587792799)) {
             throw new Error('.if checksum mismatch!\nYou can disable this safety check by setting BUILD_VERIFY=false');
         }
 

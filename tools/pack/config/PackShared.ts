@@ -270,7 +270,9 @@ export async function readConfigs(dirTree: Set<string>, extension: string, requi
 
     const { client, server } = pack(configs, modelFlags);
 
-    if (Environment.BUILD_VERIFY && validate && !validate(client.dat, server.dat)) {
+    // BUILD_VERIFY compares against unmodified base content, so it is skipped
+    // (with an info line) for types that mods changed
+    if (validate && ModManager.shouldVerify(extension) && !validate(client.dat, server.dat)) {
         throw new Error(`${extension} checksum mismatch!\nYou can disable this safety check by setting BUILD_VERIFY=false`);
     }
 

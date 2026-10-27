@@ -1,0 +1,13 @@
+// a music tab entry for the mod song; it lands below the last base entry
+[int_theme]
+layer=com_0
+type=text
+x=10
+y=end+2
+width=80
+height=14
+buttontype=normal
+font=p12
+shadowed=yes
+text=Int Theme
+colour=0x00FF00

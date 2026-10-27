@@ -1,0 +1,12 @@
+// a row in the base music table: the play button is a component this mod adds
+// to the base music interface (interfaces/music.ifpatch)
+[music_int_theme]
+table=music
+data=name,Int Theme
+data=playbutton,music:int_theme
+
+// area music for the new square (base musicregion table)
+[musicregion_int_62_50]
+table=musicregion
+data=mapsquare,0_62_50_0_0
+data=musicdata,music_int_theme

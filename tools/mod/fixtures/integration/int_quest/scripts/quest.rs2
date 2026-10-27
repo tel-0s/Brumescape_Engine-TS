@@ -1,0 +1,34 @@
+// overrides int_land's [opnpc1,int_warden]; the original is int_land's script
+[opnpc1,int_warden]
+if (%int_quest = 0) {
+    ~chatnpc("<p,neutral>Bring me an island token.");
+    %int_quest = 1;
+    ~send_quest_progress(questlist:int_quest, %int_quest, ^int_quest_complete);
+    return;
+}
+if (%int_quest = 1 & inv_total(inv, int_token) > 0) {
+    inv_del(inv, int_token, 1);
+    queue(int_quest_complete, 0);
+    return;
+}
+@original_opnpc1_int_warden;
+
+[opnpc3,int_warden]
+~send_quest_progress(questlist:int_quest, %int_quest, ^int_quest_complete);
+
+[queue,int_quest_complete]
+%int_quest = ^int_quest_complete;
+~send_quest_complete(questlist:int_quest, int_token, 250, ^int_quest_questpoints, "You have completed Int Quest!");
+
+// colour the quest list entry at login
+[proc,update_questlist]
+~original_proc_update_questlist;
+~send_quest_progress_colour(questlist:int_quest, %int_quest, ^int_quest_complete);
+
+// count the quest points
+[proc,count_questpoints]()(int)
+def_int $points = ~original_proc_count_questpoints;
+if (%int_quest = ^int_quest_complete) {
+    $points = add($points, ^int_quest_questpoints);
+}
+return($points);

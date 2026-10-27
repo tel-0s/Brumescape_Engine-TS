@@ -1,0 +1,12 @@
+[int_quest]
+layer=com_0
+type=text
+x=10
+y=end+2
+width=130
+height=14
+buttontype=normal
+font=p12
+shadowed=yes
+text=Int Quest
+colour=0xFF0000

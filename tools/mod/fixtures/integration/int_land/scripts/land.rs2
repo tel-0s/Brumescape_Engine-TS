@@ -1,0 +1,8 @@
+// area music: the base player looks up the musicregion row of the square
+[mapzone,0_62_50] @music_playbyregion(coord);
+
+// the music tab button for the mod song
+[if_button,music:int_theme] ~music_playbybutton(music:int_theme);
+
+[opnpc1,int_warden]
+~chatnpc("<p,neutral>Welcome to the island.");

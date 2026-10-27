@@ -1,0 +1,7 @@
+{
+    "name": "int_quest",
+    "version": "1.0.0",
+    "author": "fixtures",
+    "description": "Integration fixture: a quest on int_land's island (constants, varp, quest list entry, overrides)",
+    "dependencies": { "int_land": "1.0.0" }
+}

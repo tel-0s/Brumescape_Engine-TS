@@ -1,0 +1,6 @@
+{
+    "name": "int_land",
+    "version": "1.0.0",
+    "author": "fixtures",
+    "description": "Integration fixture: a new land with mod floors, an npc, a song in the music tab and area music"
+}

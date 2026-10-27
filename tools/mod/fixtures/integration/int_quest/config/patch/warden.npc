@@ -1,0 +1,3 @@
+// int_land's npc gets a second option (a patch of another mod's config)
+[int_warden]
+op3=Ask-about-quest

@@ -1,0 +1,7 @@
+// mod floors, used by name in maps/m62_50.jm2 (data types + maps)
+[int_moss]
+colour=0x2E5A2A
+
+[int_path]
+overlay=yes
+colour=0x7A5C3A

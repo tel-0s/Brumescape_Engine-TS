@@ -4,7 +4,8 @@ import path from 'path';
 import { printError, printInfo, printWarning } from '#/util/Logger.js';
 import type { PackFile } from '#tools/pack/PackFileBase.js';
 import { Mod } from '#/mod/ModTypes.js';
-import type { ClientStage, CompilerConfig, ConfigHookArgs, ModBuildContext, ModCapability, ModFile, ModManifest } from '#/mod/ModTypes.js';
+import type { ClientStage, CompilerConfig, ConfigHookArgs, ModBuildContext, ModCapability, ModFile } from '#/mod/ModTypes.js';
+import { discoverMods } from '#/mod/ModDiscovery.js';
 
 export { Mod } from '#/mod/ModTypes.js';
 export type { ModFile, ModManifest, ModCapability, ModBuildContext } from '#/mod/ModTypes.js';
@@ -72,26 +73,19 @@ class ModManager {
         this.mods = [];
         this.idMap = null;
 
-        const entries = fs.readdirSync(this.modsDir, { withFileTypes: true });
-        for (const entry of entries) {
-            if (!entry.isDirectory()) {
-                continue;
-            }
+        // Sorted by name, then topologically by dependencies; mods disabled
+        // in mods.json are skipped. Throws on a missing dependency or a cycle.
+        const { mods, disabled, warnings } = discoverMods(this.modsDir);
+        for (const warning of warnings) {
+            printWarning(`[mods] ${warning}`);
+        }
 
-            const dir = path.resolve(this.modsDir, entry.name);
-            const manifestPath = path.join(dir, 'mod.json');
-            if (!fs.existsSync(manifestPath)) {
-                continue;
-            }
-
-            try {
-                const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) as ModManifest;
-                const mod = new Mod(dir, manifest);
-                this.mods.push(mod);
-                printInfo(`Loaded mod: ${mod.name} v${manifest.version}`);
-            } catch (err) {
-                printError(`Failed to load mod at ${dir}: ${err}`);
-            }
+        this.mods = mods;
+        if (mods.length > 0) {
+            printInfo(`[mods] Load order: ${mods.map(m => `${m.name} v${m.manifest.version}`).join(', ')}`);
+        }
+        if (disabled.length > 0) {
+            printInfo(`[mods] Disabled in mods.json: ${disabled.map(m => m.name).join(', ')}`);
         }
     }
 

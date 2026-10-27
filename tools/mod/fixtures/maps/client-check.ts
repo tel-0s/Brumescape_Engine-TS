@@ -50,7 +50,9 @@ LocType.unpack(config);
 FloType.unpack(config);
 SeqType.unpack(config); // animated locs
 
-expect(FloType.count === flo.size, `client FloType decoded ${FloType.count} floors`);
+// base floors plus any floors that mods in this mods dir add (none in this fixture alone)
+const floCount = Math.max(flo.size, ...Object.values(ids.flo ?? {}).map(id => id + 1));
+expect(FloType.count === floCount, `client FloType decoded ${FloType.count} floors (expected ${floCount})`);
 
 // Fetch a map file the way the client does: map_index lookup, version and CRC
 // check against the versionlist, then gunzip (minus the 2-byte version trailer).

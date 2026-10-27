@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
@@ -51,8 +52,19 @@ class ModManager {
     private claims: Map<string, Map<string, ModFile>> = new Map();
     private assets: Map<string, Map<string, string>> = new Map();
 
+    // True while a build runs after the mod set changed (see beginBuild).
+    // Every shouldBuild*() check in tools/pack/PackFile.ts returns true then.
+    forceRebuild = false;
+    private fingerprint: string | null = null;
+    private outputs: Set<string> = new Set();
+
     get idMapPath(): string {
         return path.join(this.modsDir, 'idmap.json');
+    }
+
+    // Fingerprint of the last successful build and the mod outputs it recorded
+    get statePath(): string {
+        return path.resolve('data/pack/mods/state.json');
     }
 
     // ------------------------------------------------------------------------
@@ -116,20 +128,111 @@ class ModManager {
         this.claims.clear();
         this.assets.clear();
 
+        // Incremental packing (shouldBuild*) only compares base content
+        // mtimes, so it cannot see a mod change. Compare a fingerprint of the
+        // mod set with the one stored by the last successful build; if it
+        // differs, delete the outputs mods recorded last time and force every
+        // incremental stage to repack. This is generic: any packer that uses
+        // the shouldBuild* helpers is covered.
+        this.fingerprint = this.computeFingerprint();
+        const state = this.readState();
+        this.forceRebuild = state === null || state.fingerprint !== this.fingerprint;
+        this.outputs = new Set(state?.outputs ?? []);
+
+        if (this.forceRebuild) {
+            printInfo(state === null ? '[mods] No record of a previous mod build: repacking everything mods can affect' : '[mods] Mod set changed since the last build: repacking everything mods can affect');
+            for (const output of this.outputs) {
+                fs.rmSync(path.resolve(output), { recursive: true, force: true });
+            }
+            this.outputs.clear();
+            // Written again by finishBuild(); a failed build forces the next one too
+            fs.rmSync(this.statePath, { force: true });
+        }
+
         this.ctx = {
             mods: this.mods,
             modelFlags,
             cache: null,
-            forceRebuild: false
+            forceRebuild: this.forceRebuild
         };
 
         await this.runHook('prepare');
         return this.ctx;
     }
 
+    // Called at the end of a successful packServer()
     finishBuild() {
         this.saveIdMap();
+        this.writeState();
+        this.forceRebuild = false;
         this.ctx = null;
+    }
+
+    // Hash of everything that decides what mods contribute to a build: the mods
+    // dir, the enabled mods in load order, every file in each enabled mod
+    // (relative path, size, mtime) and the mod loader's own source
+    // (src/mod/**). idmap.json is not included: it only changes as a result of
+    // a build (hand edits need `bun run clean`).
+    computeFingerprint(): string {
+        const hash = crypto.createHash('sha256');
+        hash.update(`mods-dir\t${path.resolve(this.modsDir)}\n`);
+
+        const addTree = (label: string, root: string) => {
+            if (!fs.existsSync(root)) {
+                return;
+            }
+            const files: string[] = [];
+            walk(root, true, files);
+            files.sort();
+            for (const file of files) {
+                const stat = fs.statSync(file);
+                hash.update(`${label}\t${toPosix(path.relative(root, file))}\t${stat.size}\t${stat.mtimeMs}\n`);
+            }
+        };
+
+        for (const mod of this.mods) {
+            hash.update(`mod\t${mod.name}\t${mod.manifest.version}\t${mod.dir}\n`);
+            addTree(mod.name, mod.dir);
+        }
+        addTree('loader', path.resolve('src/mod'));
+
+        return hash.digest('hex');
+    }
+
+    // Record a file or directory a capability wrote outside the client cache
+    // that base packing would not overwrite or delete by itself (e.g. a new
+    // map square). It is deleted before the next build that follows a change
+    // to the mod set. Paths must be inside data/.
+    recordOutput(file: string) {
+        const rel = toPosix(path.relative(process.cwd(), path.resolve(file)));
+        if (!rel.startsWith('data/')) {
+            throw new Error(`recordOutput: ${file} is outside data/; capabilities must not write elsewhere`);
+        }
+        this.outputs.add(rel);
+    }
+
+    private readState(): { fingerprint: string; outputs: string[] } | null {
+        if (!fs.existsSync(this.statePath)) {
+            return null;
+        }
+        try {
+            const state = JSON.parse(fs.readFileSync(this.statePath, 'utf-8'));
+            if (typeof state.fingerprint !== 'string' || !Array.isArray(state.outputs)) {
+                return null;
+            }
+            return state;
+        } catch (_err) {
+            return null;
+        }
+    }
+
+    private writeState() {
+        if (this.fingerprint === null) {
+            return;
+        }
+        fs.mkdirSync(path.dirname(this.statePath), { recursive: true });
+        const outputs = Array.from(this.outputs).sort();
+        fs.writeFileSync(this.statePath, JSON.stringify({ fingerprint: this.fingerprint, outputs }, null, 4) + '\n');
     }
 
     // ------------------------------------------------------------------------

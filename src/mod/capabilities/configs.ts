@@ -74,18 +74,6 @@ function scanHeaders(file: ModFile): { name: string; line: number }[] {
 const capability: ModCapability = {
     name: 'configs',
 
-    prepare() {
-        // shouldBuild() only tracks base content, so it would skip a config
-        // type that only a mod changed. Invalidate the packed server .dat of
-        // every type a mod provides so it is repacked with the injection.
-        for (const file of modConfigFiles()) {
-            const dat = `data/pack/server/${file.ext.slice(1)}.dat`;
-            if (fs.existsSync(dat)) {
-                fs.rmSync(dat);
-            }
-        }
-    },
-
     // Register every mod config name on every build (even when the type is
     // not repacked) so ids and compiler symbols are always complete. Also
     // rejects a name defined twice by the same mod.

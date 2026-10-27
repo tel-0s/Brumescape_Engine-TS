@@ -6,6 +6,7 @@ import { PackFile } from '#tools/pack/PackFileBase.js';
 import { listFilesExt, loadDirExtFull } from '#tools/pack/Parse.js';
 import { fileExists, fileStats } from '#tools/pack/FsCache.js';
 import { printDebug, printError } from '#/util/Logger.js';
+import ModManager from '#/mod/ModManager.js';
 // import { printWarning } from '#/util/Logger.js';
 
 function validateFilesPack(pack: PackFile, paths: string[], ext: string, verify: boolean = true): void {
@@ -376,6 +377,11 @@ export function getLatestModified(path: string, ext: string) {
 }
 
 export function shouldBuild(path: string, ext: string, out: string) {
+    // The mod set changed since the last build: repack everything (see ModManager.beginBuild)
+    if (ModManager.forceRebuild) {
+        return true;
+    }
+
     if (!fileExists(out)) {
         return true;
     }
@@ -387,6 +393,11 @@ export function shouldBuild(path: string, ext: string, out: string) {
 }
 
 export function shouldBuildFile(src: string, dest: string) {
+    // The mod set changed since the last build: repack everything (see ModManager.beginBuild)
+    if (ModManager.forceRebuild) {
+        return true;
+    }
+
     if (!fileExists(dest)) {
         return true;
     }
@@ -398,6 +409,11 @@ export function shouldBuildFile(src: string, dest: string) {
 }
 
 export function shouldBuildFileAny(path: string, dest: string) {
+    // The mod set changed since the last build: repack everything (see ModManager.beginBuild)
+    if (ModManager.forceRebuild) {
+        return true;
+    }
+
     if (!fileExists(dest)) {
         return true;
     }

@@ -15,6 +15,16 @@ export default class AnimFrame {
     z: Int32Array = new Int32Array();
 
     static load() {
+        // (Re)load every frame. Mods can add or change frames, so a hot repack
+        // must not keep the old table. Forget memoized archive 2 reads: they
+        // can be stale after a repack, and FileStream.read returns memoized
+        // (still compressed) bytes even when asked to decompress.
+        AnimFrame.instances = [];
+        AnimFrame.order = [];
+        AnimBase.instances = [];
+        AnimBase.order = [];
+        OnDemand.cache.packed[2] = [];
+
         const count = OnDemand.cache.count(2);
         for (let i = 0; i < count; i++) {
             const data = OnDemand.cache.read(2, i, true);

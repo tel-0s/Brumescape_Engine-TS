@@ -78,7 +78,7 @@ function collectPlans(): Map<string, SquarePlan> {
         const name = patch ? file.name.substring(0, file.name.length - '.patch'.length) : file.name;
         const square = parseSquareName(name);
         if (!square) {
-            throw ModManager.error(file, null, 'Map files must be named m<x>_<z>.jm2 (a whole square) or m<x>_<z>.patch.jm2 (a patch), with x and z 0-255, e.g. m60_50.jm2');
+            throw ModManager.error(file, null, 'Map files must be named m<x>_<z>.jm2 (a whole square) or m<x>_<z>.patch.jm2 (a patch), with x and z 0-255 and no leading zeros, e.g. m60_50.jm2');
         }
 
         const key = `${file.mod.name}\t${name}\t${patch}`;

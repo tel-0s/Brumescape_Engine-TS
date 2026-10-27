@@ -17,7 +17,7 @@ import Environment from '#/util/Environment.js';
 import { expect, readBasePack, readIdMap } from '#tools/mod/Inspect.js';
 import { expectedFromJm2, readClientSquare, readMapIndex, readServerSquare, sortSquare, tileIndex } from '#tools/mod/MapInspect.js';
 import type { PackedSquare } from '#tools/mod/MapInspect.js';
-import { applyJm2Patch, parseJm2 } from '#tools/pack/map/Jm2.js';
+import { applyJm2Patch, parseJm2, parseSquareName } from '#tools/pack/map/Jm2.js';
 import type { Jm2Resolver } from '#tools/pack/map/Jm2.js';
 
 const fixture = Environment.BUILD_MODS_DIR;
@@ -170,6 +170,7 @@ try {
     patchError = (err as Error).message;
 }
 expect(patchError === "2: '-0 1 2: tree' matches no loc in the square", `patch error: a removal that matches nothing fails (${patchError})`);
+expect(parseSquareName('m60_50')?.x === 60 && parseSquareName('m060_50') === null && parseSquareName('m256_1') === null, 'square names must be canonical m<x>_<z> with x and z 0-255');
 expect(parseError('==== MAP ====\n0 1 1: h1 // a comment\n// whole-line comment\n==== LOC ====\n0 1 1: tree 10 // another') === '(no error)', 'mod files may have // comments');
 
 // ---- the server's and the client's own loaders ----

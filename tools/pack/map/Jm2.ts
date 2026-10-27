@@ -470,9 +470,11 @@ export function serializeJm2(square: Jm2File): string {
     return out.join('\n') + '\n';
 }
 
-// 'm60_50' -> { x: 60, z: 50 }; null if the name is not a map square
+// 'm60_50' -> { x: 60, z: 50 }; null if the name is not a map square.
+// Only the canonical form (no leading zeros) matches, since the name is the
+// key in map.pack and the packed file names.
 export function parseSquareName(name: string): { x: number; z: number } | null {
-    const match = /^m(\d+)_(\d+)$/.exec(name);
+    const match = /^m(0|[1-9]\d*)_(0|[1-9]\d*)$/.exec(name);
     if (!match) {
         return null;
     }

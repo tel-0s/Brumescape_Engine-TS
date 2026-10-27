@@ -224,7 +224,7 @@ const capability: ModCapability = {
             if (id > limit) {
                 throw ModManager.error(file, null, `Floor '${name}' got flo id ${id}, but a map can only reference ${overlay ? 'overlay' : 'underlay'} floors up to id ${limit}. Remove unused floors from mods, or make it an overlay (overlay=yes).`);
             }
-            printInfo(`[mods] floor ${name}: flo id ${id}; in a .jm2 map write ${overlay ? 'o' : 'u'}${id + 1}`);
+            printInfo(`[mods] floor ${name}: flo id ${id}; in a .jm2 map write ${overlay ? 'o' : 'u'}${name} (packed as ${overlay ? 'o' : 'u'}${id + 1})`);
         }
     },
 

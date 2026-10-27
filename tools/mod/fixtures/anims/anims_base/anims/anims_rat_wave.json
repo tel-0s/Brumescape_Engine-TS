@@ -1,0 +1,8 @@
+{
+    "comment": "Base form on the rat skeleton (base_13). anim_4178 is a base frame (rat_ready frame 1): defining it here overrides it, and base animset anim_13 is repacked without it.",
+    "base": "base_13",
+    "frames": [
+        { "name": "anim_4178", "delay": 7, "transforms": [[1, 0, 32], [3, 0, -32], [11, 0, -4]] },
+        { "name": "rat_wave_1", "delay": 6, "transforms": [[1, 0, 0, 16], [9, 0, 64]] }
+    ]
+}

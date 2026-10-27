@@ -1,0 +1,9 @@
+{
+    "comment": "Overridden as a whole by anims_extra (later mod wins)",
+    "bones": [{ "name": "all", "labels": [1, 2, 3, 4, 5, 6, 7], "pivot": [0, 0, 0] }],
+    "delay": 10,
+    "frames": [
+        { "name": "spin_1", "pose": { "all": { "rotate": [0, 0, 0] } } },
+        { "name": "spin_2", "pose": { "all": { "rotate": [0, 90, 0] } } }
+    ]
+}

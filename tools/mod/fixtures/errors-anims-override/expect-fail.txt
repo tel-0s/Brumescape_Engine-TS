@@ -1,0 +1,2 @@
+[mod bad_override] anims/anim_13.json:1: replaces the base of animset anim_13, but does not redefine its frames
+Redefine them, or keep the original base (leave out "base").

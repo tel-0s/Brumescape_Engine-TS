@@ -1,0 +1,39 @@
+{
+    "comment": "Bone form. Pivots are in model units (128 per tile, y down, the front is -z).",
+    "bones": [
+        { "name": "body", "label": 1 },
+        { "name": "head", "label": 2, "parent": "body", "pivot": [0, -40, -26] },
+        { "name": "tail", "label": 3, "parent": "body", "pivot": [0, -38, 26] },
+        { "name": "leg_fl", "label": 4, "parent": "body", "pivot": [12, -19, -18] },
+        { "name": "leg_fr", "label": 5, "parent": "body", "pivot": [-12, -19, -18] },
+        { "name": "leg_bl", "label": 6, "parent": "body", "pivot": [12, -19, 18] },
+        { "name": "leg_br", "label": 7, "parent": "body", "pivot": [-12, -19, 18] }
+    ],
+    "delay": 5,
+    "frames": [
+        { "name": "critter_ready_1" },
+        { "name": "critter_ready_2", "delay": 8, "pose": { "head": { "rotate": [-10, 0, 0] }, "tail": { "rotate": [0, 15, 0] } } },
+        {
+            "name": "critter_walk_1",
+            "pose": {
+                "leg_fl": { "rotate": [25, 0, 0] },
+                "leg_br": { "rotate": [25, 0, 0] },
+                "leg_fr": { "rotate": [-25, 0, 0] },
+                "leg_bl": { "rotate": [-25, 0, 0] },
+                "tail": { "rotate": [0, 20, 0] }
+            }
+        },
+        { "name": "critter_walk_2", "pose": { "body": { "translate": [0, -2, 0] } } },
+        {
+            "name": "critter_walk_3",
+            "pose": {
+                "leg_fl": { "rotate": [-25, 0, 0] },
+                "leg_br": { "rotate": [-25, 0, 0] },
+                "leg_fr": { "rotate": [25, 0, 0] },
+                "leg_bl": { "rotate": [25, 0, 0] },
+                "tail": { "rotate": [0, -20, 0] }
+            }
+        },
+        { "name": "critter_walk_4", "pose": { "body": { "translate": [0, -2, 0] }, "head": { "rotate": [0, 90, 0] }, "leg_fl": { "scale": [1, 1.5, 1] } } }
+    ]
+}

@@ -1,0 +1,17 @@
+# anims fixture materials
+newmtl fur
+Kd 0.55 0.35 0.20
+
+newmtl headfur
+Kd 0.65 0.45 0.30
+
+newmtl tailfur
+Kd 0.20 0.15 0.10
+
+newmtl paw
+Kd 0.30 0.20 0.10
+
+# textured with the base texture "painting1" (the file name picks the texture)
+newmtl face
+Kd 1 1 1
+map_Kd painting1.png

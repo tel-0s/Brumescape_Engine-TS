@@ -1,0 +1,6 @@
+{
+    "name": "anims_base",
+    "version": "1.0.0",
+    "author": "fixtures",
+    "description": "Anims fixture: an OBJ critter with bone animations, frames on a base skeleton, and overrides of base animations"
+}

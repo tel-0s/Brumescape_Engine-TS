@@ -1,0 +1,5 @@
+{
+    "comment": "Conversion options for anims_critter.obj: groups are named after the bones of anims/anims_critter.json",
+    "scale": 128,
+    "rig": "anims_critter"
+}

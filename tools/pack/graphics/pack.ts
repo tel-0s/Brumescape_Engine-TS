@@ -39,10 +39,19 @@ export function packClientModel(cache: FileStream, modelFlags: number[]) {
         }
     }
 
-    const anims = listFilesExt(`${Environment.BUILD_SRC_DIR}/models`, '.anim');
-    for (const file of anims) {
+    // animset name -> source file. Mod animsets (src/mod/capabilities/anims.ts)
+    // replace base sets of the same name and add new ones.
+    const anims = new Map<string, string>();
+    for (const file of listFilesExt(`${Environment.BUILD_SRC_DIR}/models`, '.anim')) {
         const basename = path.basename(file);
-        const id = AnimSetPack.getByName(basename.substring(0, basename.lastIndexOf('.')));
+        anims.set(basename.substring(0, basename.lastIndexOf('.')), file);
+    }
+    for (const [name, file] of ModManager.getAssets('animset')) {
+        anims.set(name, file);
+    }
+
+    for (const [name, file] of anims) {
+        const id = AnimSetPack.getByName(name);
         const data = fs.readFileSync(file);
         if (data.length) {
             cache.write(2, id, compressGz(data)!, 1);

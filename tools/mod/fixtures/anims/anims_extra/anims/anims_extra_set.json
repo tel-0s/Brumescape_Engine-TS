@@ -1,0 +1,5 @@
+{
+    "comment": "Base form on the critter's compiled base, with its group names. critter_walk_2 comes from anims_base: the later mod wins.",
+    "base": "anims_critter",
+    "frames": [{ "name": "critter_walk_2", "delay": 4, "transforms": [["body.translate", 0, -6, 0]] }]
+}

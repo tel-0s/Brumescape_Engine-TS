@@ -1,0 +1,9 @@
+{
+    "bones": [{ "name": "all", "labels": [1, 2, 3, 4, 5, 6, 7], "pivot": [0, -20, 0] }],
+    "delay": 6,
+    "frames": [
+        { "name": "spin_1", "pose": { "all": { "rotate": [0, 0, 0] } } },
+        { "name": "spin_2", "pose": { "all": { "rotate": [0, 120, 0] } } },
+        { "name": "spin_3", "pose": { "all": { "rotate": [0, 240, 0] } } }
+    ]
+}

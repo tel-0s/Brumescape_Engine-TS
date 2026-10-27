@@ -1,0 +1,7 @@
+{
+    "comment": "Override of base animset anim_8 (the cow's). No base: the original is kept, and so are the frames this file does not redefine.",
+    "frames": [
+        { "name": "anim_4389", "delay": 9, "transforms": [[2, 0, 0, 8]] },
+        { "name": "cow_moo_1", "delay": 12, "transforms": [[31, 0, 0, 0], [4, 24]] }
+    ]
+}

@@ -1,0 +1,6 @@
+{
+    "name": "bad_anims",
+    "version": "1.0.0",
+    "author": "fixtures",
+    "description": "A frame that uses a group the base does not have"
+}

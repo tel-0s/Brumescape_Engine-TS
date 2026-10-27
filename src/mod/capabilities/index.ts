@@ -31,5 +31,7 @@ ModManager.register((await import('#/mod/capabilities/init.js')).default);
 // ---- slot D: maps and new lands (.jm2, obj spawns) ----
 
 // ---- slot E: data types (.constant, .dbtable/.dbrow, .flo, categories) and audio ----
+ModManager.register((await import('#/mod/capabilities/data.js')).default);
+ModManager.register((await import('#/mod/capabilities/audio.js')).default);
 
 // ---- (end of registration point) ----

@@ -353,6 +353,11 @@ class ModManager {
         return this.assets.get(kind)?.get(name);
     }
 
+    // All assets of a kind (name -> absolute path), e.g. to add mod-only names
+    getAssets(kind: string): ReadonlyMap<string, string> {
+        return this.assets.get(kind) ?? new Map();
+    }
+
     // Engine-local, gitignored scratch space for mod build products
     // (data/pack/mods/<sub>). Never write mod data into the content dir.
     stagingDir(sub: string = ''): string {

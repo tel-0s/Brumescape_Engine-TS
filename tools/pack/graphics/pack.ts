@@ -7,12 +7,22 @@ import FileStream from '#/io/FileStream.js';
 import { listFilesExt } from '#tools/pack/Parse.js';
 import { AnimSetPack, ModelPack } from '#tools/pack/PackFile.js';
 import { printWarning } from '#/util/Logger.js';
+import ModManager from '#/mod/ModManager.js';
 
 export function packClientModel(cache: FileStream, modelFlags: number[]) {
-    const models = listFilesExt(`${Environment.BUILD_SRC_DIR}/models`, '.ob2');
-    for (const file of models) {
+    // model name -> source file. Mod models (src/mod/capabilities/models.ts)
+    // replace base models of the same name and add new ones.
+    const sources = new Map<string, string>();
+    for (const file of listFilesExt(`${Environment.BUILD_SRC_DIR}/models`, '.ob2')) {
         const basename = path.basename(file);
-        const id = ModelPack.getByName(basename.substring(0, basename.lastIndexOf('.')));
+        sources.set(basename.substring(0, basename.lastIndexOf('.')), file);
+    }
+    for (const [name, file] of ModManager.getAssets('model')) {
+        sources.set(name, file);
+    }
+
+    for (const [name, file] of sources) {
+        const id = ModelPack.getByName(name);
         const data = fs.readFileSync(file);
         if (data.length) {
             cache.write(1, id, compressGz(data)!, 1);

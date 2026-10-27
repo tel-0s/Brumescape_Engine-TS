@@ -28,7 +28,8 @@ The capabilities that exist now are the reference examples:
 | `textures.ts` | `textures/**/*.png` | `registerName` plus `setAsset('texture', …)`. `tools/pack/sprite/textures.ts` reads `getAsset`. |
 | `title.ts` | `title/*.png`, `binary/title.jpg` | `setAsset` only. `tools/pack/sprite/title.ts` reads `getAsset`. |
 | `scripts.ts` | `scripts/**/*.rs2` | Stages files in `prepare`, registers script names, adds a compiler source in `beforeCompile`. |
-| `spawns.ts` | `spawns.json` | `worldBoot`: places npcs and locs. |
+| `spawns.ts` | `spawns.json` | `beforeSymbols`: checks names and values. `worldBoot`: places npcs, locs and objs. |
+| `maps.ts` | `maps/**/m<x>_<z>.jm2`, `.patch.jm2`, `maps/free2play.csv`, `maps/multiway.csv` | `afterRevalidate`: `registerName('map', MapPack, …)` for new squares, `setAsset('map', …)`, `recordOutput` for new squares, merged zone lists. `before.maps`: resolves names and patches into numeric `.jm2` files in `data/pack/mods/maps/`. `tools/pack/map/Pack.js` reads `getAssets('map')`. |
 | `init.ts` | mod.json `"init"` | `worldBoot`: runs `[proc,<init>]`. |
 
 ## The build pipeline and its hook points

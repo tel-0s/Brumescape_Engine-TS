@@ -1,0 +1,1 @@
+[mod bad_if] interfaces/bad_panel.if:7: bad_panel:label: invalid font=p13 (p11, p12, b12, q8)

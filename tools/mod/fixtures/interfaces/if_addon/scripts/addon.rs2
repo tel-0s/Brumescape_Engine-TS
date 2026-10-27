@@ -1,0 +1,11 @@
+[if_button,questlist:if_quest2]
+~if_fixture_open_journal("Fixture Quest II");
+if_settext(if_journal:line3, "Opened from the second entry");
+
+[proc,if_fixture_addon_ui]
+if_settab(if_shared, ^tab_quest_journal);
+if_settext(if_shared:new_only, "addon");
+// a component the replacement left out still compiles
+if_settext(if_shared:old_only, "placeholder");
+if_settext(misthalin_map:if_note, "");
+if_setmodel(misthalin_map:com_1, 0);

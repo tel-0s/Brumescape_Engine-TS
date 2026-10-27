@@ -1,0 +1,14 @@
+// Patch another mod's interface: recolour the title, add a component
+[title]
+colour=0x000080
+
+[line3]
+layer=frame
+type=text
+x=10
+y=end+2
+width=280
+height=14
+font=p12
+text=Added by if_addon
+colour=0x000000

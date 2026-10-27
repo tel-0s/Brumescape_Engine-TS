@@ -1,0 +1,1 @@
+[mod bad_sprite] sprites/bad_sheet.png: sprites/meta/bad_sheet.opt: the image has 2 tiles of 16x16, but the file has 1 crop box lines

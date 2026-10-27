@@ -1,0 +1,7 @@
+{
+    "name": "if_addon",
+    "version": "1.0.0",
+    "author": "fixtures",
+    "description": "Loads after if_base: patches if_base's interface, adds a second quest list entry, replaces a base interface, wins sprite and interface conflicts",
+    "dependencies": { "if_base": "1.0.0" }
+}

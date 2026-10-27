@@ -53,7 +53,7 @@ the client cache and the server data, together with base content.
 bun run mod create MyMod --author you   # scaffold mods/MyMod/ with every folder
 bun run mod validate MyMod              # build base content plus only this mod
 bun run build                           # build base content plus every enabled mod
-bun run quickstart                      # start the server; open http://localhost/ (Linux: port 8888)
+bun run quickstart                      # start the server; open the URL it prints after "World ready"
 ```
 
 `bun run mod create` without a name asks questions instead. It makes:
@@ -356,8 +356,24 @@ data=price,^my_price
   [patch](#config-patches) (`data=<column>,...`).
 - **Replacing a base table** replaces it as a whole. Base rows must still
   fit its columns.
-- In scripts: `db_find(my_shops:npc, island_warden)`, `db_findnext` and
-  `db_getfield($row, my_shops:price, 0)`.
+- In scripts, `db_find` starts a search and returns the number of matching
+  rows (an `int`, which you can ignore). `db_findnext` returns the next
+  match as a `dbrow`, or `null` when there are no more. `db_getfield`
+  returns the column's value (one value for each type in the column's
+  definition):
+
+  ```
+  db_find(my_shops:npc, island_warden);
+  def_dbrow $row = db_findnext;
+  if ($row ! null) {
+      def_int $price = db_getfield($row, my_shops:price, 0);
+      mes("It costs <tostring($price)> coins.");
+  }
+  ```
+
+  To visit every match, call `$row = db_findnext;` in a
+  `while ($row ! null)` loop. `def_dbrow $row = db_find(...)` does not
+  compile, because `db_find` returns the count.
 
 ### Floors
 
@@ -605,7 +621,11 @@ Options file `models/<name>.json` (all keys optional):
 - Blender writes each face under the vertex group that most of its vertices
   belong to. There is one label per vertex: there are no weights.
 
-Check a conversion without a build: `bun run mod:art obj models/critter.obj`.
+Check a conversion without a build: `bun run mod:art obj models/critter.obj`
+prints the converted model (groups, labels, counts) and writes nothing. To
+get the `.ob2` file, give an output path outside the mod's `models/` folder,
+for example `bun run mod:art obj models/critter.obj /tmp/critter.ob2`: an
+`.ob2` and an `.obj` with the same name in one mod stop the build.
 
 ### Textures
 
@@ -1019,11 +1039,38 @@ later mod wins. The example mod `mods/brumescape` replaces the logo.
 
 | Path | What |
 | --- | --- |
-| `synth/**/*.synth` | Sound effects. Raw wave data in the same format as `content/synth/`. |
+| `synth/**/*.synth` | Sound effects, in the 2004 synth format of `content/synth/`. |
 | `songs/**/*.mid` | Songs (standard MIDI files). |
 | `jingles/**/*.mid` | Jingles (standard MIDI files). |
 
 The file name without the extension is the asset name.
+
+**Making a `.synth` sound.** Brumescape has no synth editor or converter:
+a `.synth` file is not a recording (WAV or OGG files cannot be converted).
+It is a set of tones that the client synthesizes. To make one:
+
+1. Use a base sound as it is, if one fits: scripts can play any of the 579
+   base sounds by name (`sound_synth(bat_death, 1, 0)`), with no file in
+   the mod. The names are in `content/synth/` (for example
+   `content/synth/atmospherics/`).
+2. Or copy a base `.synth` file into your mod's `synth/` folder under a new
+   name, and change its bytes with a hex editor. The format (tones,
+   envelopes, harmonics, reverb) is described at the top of
+   [`src/mod/SynthFormat.ts`](src/mod/SynthFormat.ts); the client's decoder
+   is `src/sound/` in `Brumescape_Client-TS`. Small changes that keep the
+   structure are the easiest: the start and end values of an envelope
+   change the pitch or volume, and the tone `length` changes the duration
+   (in milliseconds).
+3. Build: the build checks the structure of every `.synth` and stops at a
+   broken one, with the byte offset.
+
+**Making a `.mid` song or jingle.** Any standard MIDI file (format 0 or 1)
+works, for example one exported from MuseScore or a DAW. The web client plays
+it with a General MIDI sound font (`SCC1_Florestan.sf2`): use General MIDI
+instruments (program changes), and channel 10 for drums. Short examples are
+in `tools/mod/fixtures/data-audio/da_base/songs/` and `jingles/`, and base
+content has 220 songs in `content/songs/` and jingles in `content/jingles/`.
+`midi_jingle("<name>", <length>)` needs the jingle's length in milliseconds.
 
 - **A new name** gets a stable id after the base ids (synth ids from 579,
   midi ids from 270). **A base name** (for example `bat_death.synth`, or
@@ -1639,8 +1686,10 @@ on the first error.
 ### Test in game
 
 - `bun run quickstart` starts the server. When it prints `World ready`, open
-  `http://localhost/` (on Linux `http://localhost:8888/`; `WEB_PORT` changes
-  it) and log in.
+  the URL on that line and log in. By default it is
+  `http://localhost/rs2.cgi` on Windows and macOS, and
+  `http://localhost:8888/rs2.cgi` on Linux. `WEB_PORT` changes the port, for
+  example `WEB_PORT=8090` gives `http://localhost:8090/rs2.cgi`.
 - When `NODE_PRODUCTION` is false (the default), every player is a developer:
   - `::tele <level>,<squareX>,<squareZ>,<localX>,<localZ>` teleports, for
     example `::tele 0,62,50,32,32`.
@@ -1659,6 +1708,7 @@ bun run mod:inspect config npc island_warden   # the packed config, decoded
 bun run mod:inspect script island              # compiled scripts whose name contains "island"
 bun run mod:inspect sym component myquest      # compiler symbols
 bun run mod:inspect ids flo                    # ids from idmap.json
+bun run mod:inspect cache 0 media              # an archive-0 file and its entries (cache 0 lists them)
 bun run mod:inspect map m62_50 0 32 30         # a packed map square and one tile
 bun run mod ui interface questlist             # an interface, decoded
 bun run mod:art model model_2429_obj           # a base model's (or an .ob2 file's) labels and bounds
@@ -1705,7 +1755,9 @@ bun run build                             # build the real mods/ again afterward
 `mod:art` commands:
 
 - `obj <in.obj> [out.ob2] [--rig f.json] [--labels a=1,b=2] [--scale n] [--priority n] [--face-labels]`:
-  convert and print the result (labels, centres, colours).
+  convert and print the result (labels, centres, colours). It writes
+  `out.ob2` only when you give it; keep that file out of the mod's `models/`
+  folder (the build converts the `.obj` itself).
 - `model <file | base name>`: summary of a model.
 - `anim-unpack <anim_N | file.anim> [out.json]`: base-form JSON of a set.
 - `anim-check <file.json>`: validate, and print groups and per-frame transforms.

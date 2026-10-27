@@ -6,9 +6,12 @@
 // handedness are kept. The default scale is 128: one OBJ unit is one tile.
 //
 // Groups: the name of the current `g` (or `o`) statement picks the vertex
-// label of the faces that follow (see ObjOptions.labels). An OBJ vertex used by
-// faces of different labels is split into one vertex per label, so the parts
-// can move apart.
+// label of the faces that follow (see ObjOptions.labels). A name with no faces
+// under it needs no label, so Blender's "Vertex Groups" export (`o <object>`,
+// then `g <vertex group>` lines) works. Back-face culling in the client agrees
+// with OBJ: counter-clockwise faces seen from outside are the front. An OBJ
+// vertex used by faces of different labels is split into one vertex per
+// label, so the parts can move apart.
 //
 // Materials: `Kd r g b` gives the face colour (converted to the 16-bit HSL the
 // client uses), `d` gives transparency, and `map_Kd <file>` makes the face
@@ -170,7 +173,11 @@ export function convertObj(text: string, file: string, options: ObjOptions = {})
     const groups = new Map<string, number>();
     const textureMappings = new Map<string, number>();
     let group = '';
-    let label = 0;
+    let groupLine = 0;
+    // resolved at the first face of a group: exporters write `o <object>`
+    // before the `g <vertex group>` lines (Blender), and a name with no faces
+    // under it must not need a label
+    let label: number | null = null;
     let material: Material | null = null;
     let materialName = '';
     let smooth = false;
@@ -259,7 +266,8 @@ export function convertObj(text: string, file: string, options: ObjOptions = {})
             uvs.push([t[0], Number.isFinite(t[1]) ? t[1] : 0]);
         } else if (key === 'g' || key === 'o') {
             group = rest[0] ?? '';
-            label = labelFor(group, lineNo);
+            groupLine = lineNo;
+            label = null;
         } else if (key === 'usemtl') {
             materialName = rest.join(' ');
             material = materials.get(materialName) ?? null;
@@ -287,9 +295,10 @@ export function convertObj(text: string, file: string, options: ObjOptions = {})
             if (rest.length < 3) {
                 throw new ObjError('a face needs at least three vertices', file, lineNo);
             }
-            if (group === '' && !groups.has('')) {
-                labelFor('', lineNo);
+            if (label === null) {
+                label = labelFor(group, group === '' ? lineNo : groupLine);
             }
+            const faceLabel: number = label;
             const corners = rest.map(token => {
                 const [v, vt] = token.split('/');
                 const pi = resolveIndex(v, positions.length, 'vertex', lineNo);
@@ -318,12 +327,12 @@ export function convertObj(text: string, file: string, options: ObjOptions = {})
                 const tri = [corners[0], corners[k], corners[k + 1]];
                 const idx = tri.map(c => {
                     const p = toModel(positions[c.pi]);
-                    return addVertex(p[0], p[1], p[2], label, `${c.pi}:${label}`);
+                    return addVertex(p[0], p[1], p[2], faceLabel, `${c.pi}:${faceLabel}`);
                 });
                 model.faceA.push(idx[0]);
                 model.faceB.push(idx[1]);
                 model.faceC.push(idx[2]);
-                model.faceLabel!.push(label);
+                model.faceLabel!.push(faceLabel);
                 model.faceAlpha!.push(mat.alpha);
                 if (textureId === undefined) {
                     model.faceColour.push(mat.colour);
@@ -354,14 +363,14 @@ export function convertObj(text: string, file: string, options: ObjOptions = {})
                 const P = at(s0, t0);
                 const M = at(s0 + 1, t0);
                 const N = at(s0, t0 + 1);
-                const mapKey = `${label}:${P}:${M}:${N}`;
+                const mapKey = `${faceLabel}:${P}:${M}:${N}`;
                 let mapping = textureMappings.get(mapKey);
                 if (mapping === undefined) {
                     mapping = model.texP.length;
                     textureMappings.set(mapKey, mapping);
-                    model.texP.push(addVertex(P[0], P[1], P[2], label, `t${P}:${label}`));
-                    model.texM.push(addVertex(M[0], M[1], M[2], label, `t${M}:${label}`));
-                    model.texN.push(addVertex(N[0], N[1], N[2], label, `t${N}:${label}`));
+                    model.texP.push(addVertex(P[0], P[1], P[2], faceLabel, `t${P}:${faceLabel}`));
+                    model.texM.push(addVertex(M[0], M[1], M[2], faceLabel, `t${M}:${faceLabel}`));
+                    model.texN.push(addVertex(N[0], N[1], N[2], faceLabel, `t${N}:${faceLabel}`));
                 }
                 model.faceColour.push(textureId);
                 model.faceInfo!.push((mapping << 2) | (smooth ? 2 : 3));

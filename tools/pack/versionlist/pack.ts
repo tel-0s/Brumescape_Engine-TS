@@ -6,6 +6,7 @@ import Packet from '#/io/Packet.js';
 import { AnimPack, AnimSetPack, MapPack, MidiPack, ModelPack } from '#tools/pack/PackFile.js';
 import Environment from '#/util/Environment.js';
 import { fileExists } from '#tools/pack/FsCache.js';
+import { readMapCsv } from '#/engine/MapCsv.js';
 
 export function packClientVersionList(cache: FileStream, modelFlags: number[]) {
     const versionlist = Jagfile.new(true);
@@ -95,7 +96,8 @@ export function packClientVersionList(cache: FileStream, modelFlags: number[]) {
         }
     }
 
-    const free2play = fs.readFileSync(`${Environment.BUILD_SRC_DIR}/maps/free2play.csv`, 'ascii').replace(/\r/g, '').split('\n');
+    // base content, or the list merged with mod changes (src/engine/MapCsv.ts)
+    const free2play = readMapCsv('free2play.csv');
     const prefetch = new Set();
     for (let index: number = 0; index < free2play.length; index++) {
         const line: string = free2play[index];
@@ -107,8 +109,9 @@ export function packClientVersionList(cache: FileStream, modelFlags: number[]) {
         prefetch.add((mx << 8) | mz);
     }
 
-    for (let mapX = 0; mapX < 100; mapX++) {
-        for (let mapZ = 0; mapZ < 255; mapZ++) {
+    // every possible square: mods can add squares anywhere (map square x and z 0-255)
+    for (let mapX = 0; mapX < 256; mapX++) {
+        for (let mapZ = 0; mapZ < 256; mapZ++) {
             const mapId = MapPack.getByName(`m${mapX}_${mapZ}`);
             if (mapId === -1) {
                 continue;

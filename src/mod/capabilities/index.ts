@@ -29,6 +29,7 @@ ModManager.register((await import('#/mod/capabilities/init.js')).default);
 // ---- slot C: animations (.anim frames/bases) and model authoring ----
 
 // ---- slot D: maps and new lands (.jm2, obj spawns) ----
+ModManager.register((await import('#/mod/capabilities/maps.js')).default);
 
 // ---- slot E: data types (.constant, .dbtable/.dbrow, .flo, categories) and audio ----
 

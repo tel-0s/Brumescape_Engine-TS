@@ -10,6 +10,7 @@ import path from 'path';
 import kleur from 'kleur';
 
 import { readObjModelOptions, rigLabels } from '#/mod/capabilities/objmodels.js';
+import { listModTree } from '#/mod/ModDiscovery.js';
 import Environment from '#/util/Environment.js';
 import { ANIM_OP_NAMES, AnimBaseDef, decodeAnimSet, encodeAnimSet, expandFrame, readAnimSetFrameIds } from '#tools/pack/graphics/AnimSet.js';
 import { animSetToJson, AnimSourceError, parseAnimSetSource, resolveFrames } from '#tools/pack/graphics/AnimSource.js';
@@ -64,18 +65,7 @@ function findFile(dir: string, name: string): string | null {
     if (!fs.existsSync(dir)) {
         return null;
     }
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-        const full = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-            const found = findFile(full, name);
-            if (found) {
-                return found;
-            }
-        } else if (entry.name === name) {
-            return full;
-        }
-    }
-    return null;
+    return listModTree(dir).find(file => path.basename(file) === name) ?? null;
 }
 
 // <mod root>/anims/**/<name>.json for an OBJ inside a mod folder

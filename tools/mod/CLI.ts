@@ -415,7 +415,8 @@ function validateMod(name: string | undefined) {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'brumescape-validate-'));
     try {
         for (const mod of included.values()) {
-            fs.cpSync(mod.dir, path.join(tempDir, path.basename(mod.dir)), { recursive: true });
+            // dereference: a mod may be (or contain) symbolic links
+            fs.cpSync(mod.dir, path.join(tempDir, path.basename(mod.dir)), { recursive: true, dereference: true });
         }
         const idmap = path.join(MODS_DIR, 'idmap.json');
         if (fs.existsSync(idmap)) {

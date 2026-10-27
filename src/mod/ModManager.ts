@@ -7,7 +7,7 @@ import { printError, printInfo, printWarning } from '#/util/Logger.js';
 import type { PackFile } from '#tools/pack/PackFileBase.js';
 import { Mod } from '#/mod/ModTypes.js';
 import type { ClientStage, CompilerConfig, ConfigHookArgs, ModBuildContext, ModCapability, ModFile } from '#/mod/ModTypes.js';
-import { discoverMods } from '#/mod/ModDiscovery.js';
+import { discoverMods, listModTree } from '#/mod/ModDiscovery.js';
 
 export { Mod } from '#/mod/ModTypes.js';
 export type { ModFile, ModManifest, ModCapability, ModBuildContext } from '#/mod/ModTypes.js';
@@ -218,10 +218,7 @@ class ModManager {
             if (!fs.existsSync(root)) {
                 return;
             }
-            const files: string[] = [];
-            walk(root, true, files);
-            files.sort();
-            for (const file of files) {
+            for (const file of walk(root, true)) {
                 const stat = fs.statSync(file);
                 hash.update(`${label}\t${toPosix(path.relative(root, file))}\t${stat.size}\t${stat.mtimeMs}\n`);
             }
@@ -378,11 +375,7 @@ class ModManager {
                 continue;
             }
 
-            const found: string[] = [];
-            walk(root, recursive, found);
-            found.sort();
-
-            for (const file of found) {
+            for (const file of walk(root, recursive)) {
                 const ext = path.extname(file).toLowerCase();
                 if (!wanted.includes(ext)) {
                     continue;
@@ -615,20 +608,17 @@ function toPosix(p: string): string {
     return p.split(path.sep).join('/');
 }
 
-function walk(dir: string, recursive: boolean, out: string[]) {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-        if (entry.name.startsWith('.')) {
-            continue;
+// Links that point nowhere or loop, reported once per process
+const reportedLinks = new Set<string>();
+
+// Files under a mod folder, sorted, following symbolic links (see listModTree)
+function walk(dir: string, recursive: boolean): string[] {
+    return listModTree(dir, recursive, (file, why) => {
+        if (!reportedLinks.has(file)) {
+            reportedLinks.add(file);
+            printWarning(`[mods] ${file} ${why}; skipped`);
         }
-        const full = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-            if (recursive) {
-                walk(full, recursive, out);
-            }
-        } else if (entry.isFile()) {
-            out.push(full);
-        }
-    }
+    });
 }
 
 function formatLocation(where: ModFile | Mod, line: number | null): string {

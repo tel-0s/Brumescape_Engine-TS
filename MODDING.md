@@ -134,7 +134,13 @@ All folders are optional. Subfolders are allowed, except in `title/` and
 | `spawns.json` | npcs, locs and objs placed when the server starts. | [spawns.json](#spawnsjson) |
 
 Other files, such as a `README.md` in the mod root, are ignored. Files whose
-name starts with `.` are ignored everywhere. In `maps/`, every file must be a
+name starts with `.` are ignored everywhere.
+
+A mod folder in `mods/`, or a folder or file inside a mod, can be a symbolic
+link, for example to a mod in its own repository
+(`ln -s ~/src/MyMod mods/MyMod`). The build follows links. A link that
+points nowhere, or at a folder that contains it, is skipped with a warning.
+The dev server watches linked mod folders that exist when it starts. In `maps/`, every file must be a
 map square or a zone list. `.if` files under `scripts/` or `config/` stop
 the build, with a message that tells you to move them.
 

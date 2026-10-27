@@ -82,9 +82,58 @@ function readManifest(dir: string): ModManifest {
     return manifest;
 }
 
-// Every <modsDir>/<dir>/mod.json. Throws on an invalid manifest or a
-// duplicate mod name.
-export function findInstalledMods(modsDir: string): Mod[] {
+// Every file under `dir` (and its subfolders unless `recursive` is false),
+// sorted by path. Symbolic links to files and folders are followed, so a mod
+// (or a folder or file inside one) can be a link to somewhere else. Names that
+// start with '.' are skipped. A link that points nowhere, or at a folder that
+// contains it (a loop), is left out and reported through `skipped`.
+export function listModTree(dir: string, recursive: boolean = true, skipped?: (file: string, why: string) => void): string[] {
+    const out: string[] = [];
+    const root = fs.realpathSync(dir);
+    // a folder that contains the walk root, or one that this walk is inside
+    const isLoop = (real: string, ancestors: Set<string>) => ancestors.has(real) || root.startsWith(real + path.sep);
+    const visit = (current: string, ancestors: Set<string>) => {
+        for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+            if (entry.name.startsWith('.')) {
+                continue;
+            }
+            const full = path.join(current, entry.name);
+            let isDirectory = entry.isDirectory();
+            let isFile = entry.isFile();
+            if (entry.isSymbolicLink()) {
+                try {
+                    const stat = fs.statSync(full);
+                    isDirectory = stat.isDirectory();
+                    isFile = stat.isFile();
+                } catch (_err) {
+                    skipped?.(full, 'is a symbolic link that points nowhere');
+                    continue;
+                }
+            }
+
+            if (isDirectory) {
+                if (!recursive) {
+                    continue;
+                }
+                const real = fs.realpathSync(full);
+                if (isLoop(real, ancestors)) {
+                    skipped?.(full, 'is a symbolic link to a folder that contains it');
+                    continue;
+                }
+                visit(full, new Set([...ancestors, real]));
+            } else if (isFile) {
+                out.push(full);
+            }
+        }
+    };
+    visit(dir, new Set([root]));
+    return out.sort();
+}
+
+// Every <modsDir>/<dir>/mod.json; <dir> may be a symbolic link to a folder.
+// Throws on an invalid manifest or a duplicate mod name. Problems that do not
+// stop discovery (a broken link) are added to `warnings`.
+export function findInstalledMods(modsDir: string, warnings: string[] = []): Mod[] {
     if (!fs.existsSync(modsDir)) {
         return [];
     }
@@ -92,7 +141,20 @@ export function findInstalledMods(modsDir: string): Mod[] {
     const mods: Mod[] = [];
     const byName = new Map<string, Mod>();
     for (const entry of fs.readdirSync(modsDir, { withFileTypes: true })) {
-        if (!entry.isDirectory() || entry.name.startsWith('.')) {
+        if (entry.name.startsWith('.')) {
+            continue;
+        }
+
+        let isDirectory = entry.isDirectory();
+        if (entry.isSymbolicLink()) {
+            try {
+                isDirectory = fs.statSync(path.join(modsDir, entry.name)).isDirectory();
+            } catch (_err) {
+                warnings.push(`${path.join(modsDir, entry.name)} is a symbolic link that points nowhere; skipped`);
+                continue;
+            }
+        }
+        if (!isDirectory) {
             continue;
         }
 
@@ -118,9 +180,9 @@ export function findInstalledMods(modsDir: string): Mod[] {
 // all placed, the one that sorts first by name goes next). Throws when a
 // dependency is missing or disabled, or on a dependency cycle.
 export function discoverMods(modsDir: string): DiscoveryResult {
-    const installed = findInstalledMods(modsDir);
-    const config = readModsConfig(modsDir);
     const warnings: string[] = [];
+    const installed = findInstalledMods(modsDir, warnings);
+    const config = readModsConfig(modsDir);
 
     const installedNames = new Set(installed.map(m => m.name));
     for (const name of config.disabled) {

@@ -108,6 +108,27 @@ function trackModsDir(dir: string) {
         trackFileChange(path.join(dir, filename));
     };
 
+    // A mod folder can be a symbolic link to somewhere else (the build
+    // follows it). Watchers do not follow links, so each linked mod folder
+    // gets its own watcher. Links added later need a restart.
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (!entry.isSymbolicLink() || entry.name.startsWith('.')) {
+            continue;
+        }
+        try {
+            const target = fs.realpathSync(path.join(dir, entry.name));
+            if (fs.statSync(target).isDirectory()) {
+                fs.watch(target, { recursive: true }, (_event, filename) => {
+                    if (filename) {
+                        onChange(path.join(entry.name, filename.toString()));
+                    }
+                });
+            }
+        } catch (_err) {
+            // a broken link: the build warns about it
+        }
+    }
+
     try {
         fs.watch(dir, { recursive: true }, (_event, filename) => {
             if (filename) {

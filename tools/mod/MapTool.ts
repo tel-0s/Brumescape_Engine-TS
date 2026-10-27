@@ -10,7 +10,7 @@ import path from 'path';
 
 import kleur from 'kleur';
 
-import { findInstalledMods } from '#/mod/ModDiscovery.js';
+import { findInstalledMods, listModTree } from '#/mod/ModDiscovery.js';
 import type { Mod } from '#/mod/ModTypes.js';
 import Environment from '#/util/Environment.js';
 
@@ -70,19 +70,8 @@ function baseSquarePath(name: string): string {
     return path.join(Environment.BUILD_SRC_DIR, 'maps', `${name}.jm2`);
 }
 
-function listJm2(dir: string, out: string[] = []): string[] {
-    if (!fs.existsSync(dir)) {
-        return out;
-    }
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-        const full = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-            listJm2(full, out);
-        } else if (entry.name.endsWith('.jm2')) {
-            out.push(full);
-        }
-    }
-    return out;
+function listJm2(dir: string): string[] {
+    return fs.existsSync(dir) ? listModTree(dir).filter(file => file.endsWith('.jm2')) : [];
 }
 
 // Mods (other than `except`) with a file for this square
@@ -109,14 +98,9 @@ function floorNames(): Set<string> {
         if (!fs.existsSync(dir)) {
             return;
         }
-        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-            const full = path.join(dir, entry.name);
-            if (entry.isDirectory()) {
-                walk(full);
-            } else if (entry.name.endsWith('.flo')) {
-                for (const match of fs.readFileSync(full, 'utf-8').matchAll(/^\[([^\]]+)\]/gm)) {
-                    names.add(match[1]);
-                }
+        for (const file of listModTree(dir).filter(f => f.endsWith('.flo'))) {
+            for (const match of fs.readFileSync(file, 'utf-8').matchAll(/^\[([^\]]+)\]/gm)) {
+                names.add(match[1]);
             }
         }
     };

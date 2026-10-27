@@ -291,22 +291,35 @@ are absolute:
 
 ```ts
 interface CompilerConfig {
-    sources: string[];   // [<content>/scripts, data/pack/mods/scripts (if any mod scripts)]
-    excluded: string[];  // the compiler skips any file whose absolute path starts with one of these
+    sources: string[];   // dirs (searched for .rs2) or single .rs2 files:
+                         // [<content>/scripts, data/pack/mods/scripts (if any mod scripts)]
+    omit: string[];      // .rs2 files to leave out of compilation entirely
+    excluded: string[];  // the compiler's 'excluded': still parsed and type-checked, only not written
     symbols: string[];   // [data/symbols]
     output: string;      // data/pack/server
     checkPointers: boolean;
 }
 ```
 
-`beforeCompile(ctx, compiler)` hooks may push to `sources` and `excluded`. To
-replace a base script without touching the content dir: write a rewritten
-copy of the base file under `stagingDir('<your sub>')`, push that directory to
-`sources`, and push the original absolute file path to `excluded`. The
-scripts capability stages each mod's scripts as
+`beforeCompile(ctx, compiler)` hooks may edit it. **To replace a base script
+without touching the content dir:** write a rewritten copy of the base file
+under `stagingDir('<your sub>')`, push that directory (or file) to
+`compiler.sources`, and push the original file's absolute path to
+`compiler.omit`. When the TOML is written, a source directory that contains an
+omitted file is listed as its `.rs2` files without the omitted ones. The
+compiler accepts single files as sources. An `omit` entry that matches no
+source file fails the build. Do **not** use `excluded` for this: the compiler
+still parses and type-checks excluded files, so a duplicate
+`[trigger,subject]` still fails. (Tested: a staged copy of `hans.rs2` plus
+`omit` compiles, and `[opnpc1,hans]` comes from the staged copy. The same
+with `excluded` fails with "already defined".)
+
+The scripts capability stages each mod's scripts as
 `data/pack/mods/scripts/<mod name>/<path under scripts/>`. Compiler errors
 show that staged path. Script names get ids in the in-memory `ScriptPack`
-(idmap kind `script`). `runescript.sym` is generated from it.
+(idmap kind `script`), and `runescript.sym` is generated from it.
+`resolveCompilerSources(compiler)` in `tools/pack/PackAll.ts` returns the
+effective source list.
 
 ## Rules
 

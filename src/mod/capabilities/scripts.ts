@@ -10,9 +10,9 @@
 // path, which names the mod and the file's path inside its scripts/ folder.
 //
 // A [trigger,subject] that base content (or another mod) already defines is an
-// error for now. Script overrides are a separate capability: it can stage a
-// rewritten copy of a base file and add the original file to
-// CompilerConfig.excluded in its own beforeCompile hook.
+// error for now. Script overrides are a separate capability: in its own
+// beforeCompile hook it can stage a rewritten copy of a base file, add that
+// copy to CompilerConfig.sources and the original file to CompilerConfig.omit.
 
 import fs from 'fs';
 import path from 'path';

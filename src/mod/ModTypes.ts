@@ -84,10 +84,18 @@ export interface ConfigHookArgs {
 
 // The RuneScript compiler configuration, generated per build into
 // data/pack/mods/neptune.toml. All paths are absolute. beforeCompile hooks may
-// add sources and excluded paths (the compiler skips any file whose absolute
-// path starts with an excluded path).
+// edit it.
 export interface CompilerConfig {
+    // Directories (searched recursively for .rs2) or single .rs2 files
     sources: string[];
+    // .rs2 files to leave out of compilation entirely, e.g. a base file that a
+    // rewritten copy (added to sources) replaces. A source directory that
+    // contains an omitted file is written out as its .rs2 files minus the
+    // omitted ones. Every entry must be inside a source, or the build fails.
+    omit: string[];
+    // The compiler's own 'excluded' option: files under these paths are still
+    // parsed and type-checked (so they still clash with duplicates) but are not
+    // written to script.dat. To replace a script, use omit instead.
     excluded: string[];
     symbols: string[];
     output: string;

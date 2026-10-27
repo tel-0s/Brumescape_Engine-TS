@@ -21,6 +21,7 @@
     "login": "bun run src/login.ts",
     "mod": "bun run tools/mod/CLI.ts",
     "mod:fixture": "bun run tools/mod/Fixture.ts",
+    "mod:art": "bun run tools/mod/Art.ts",
     "mod:inspect": "bun run tools/mod/Inspect.ts",
     "precommit": "prettier . --write && eslint src --fix",
     "prepare": "husky",

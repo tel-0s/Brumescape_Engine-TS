@@ -12,7 +12,7 @@ import type { ModCapability, ModFile } from '#/mod/ModTypes.js';
 import { printInfo } from '#/util/Logger.js';
 import type { PackFile } from '#tools/pack/PackFileBase.js';
 import { EnumPack, HuntPack, IdkPack, InvPack, LocPack, MesAnimPack, NpcPack, ObjPack, ParamPack, SeqPack, SpotAnimPack, StructPack, VarnPack, VarpPack, VarsPack } from '#tools/pack/PackFile.js';
-import type { ConfigLine } from '#tools/pack/config/PackShared.js';
+import { parseConfigLines, splitConfigLines } from '#tools/pack/config/PackShared.js';
 
 // extension ('.npc') -> PackFile holding that type's names/ids
 const configTypes: Map<string, PackFile> = new Map();
@@ -49,16 +49,26 @@ function modConfigFiles(extension?: string): ModFile[] {
     return ModManager.listFiles('config', extension ?? [...configTypes.keys()]);
 }
 
-// [name] headers defined in a mod config file
-function scanNames(file: ModFile): string[] {
-    const names: string[] = [];
-    for (const raw of fs.readFileSync(file.path, 'utf-8').split(/\r?\n/)) {
-        const line = raw.trim();
-        if (line.startsWith('[') && line.endsWith(']')) {
-            names.push(line.substring(1, line.length - 1));
+// [name] headers of a mod config file, with 1-based line numbers. Uses the
+// same header rules as parseConfigLines (a line starting with '[').
+function scanHeaders(file: ModFile): { name: string; line: number }[] {
+    const headers: { name: string; line: number }[] = [];
+    const lines = splitConfigLines(fs.readFileSync(file.path, 'utf-8'));
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.startsWith('[')) {
+            continue;
         }
+        if (!line.endsWith(']')) {
+            throw ModManager.error(file, i + 1, `Missing closing bracket: ${line}`);
+        }
+        const name = line.substring(1, line.length - 1);
+        if (!name.length) {
+            throw ModManager.error(file, i + 1, 'No config name');
+        }
+        headers.push({ name, line: i + 1 });
     }
-    return names;
+    return headers;
 }
 
 const capability: ModCapability = {
@@ -77,66 +87,48 @@ const capability: ModCapability = {
     },
 
     // Register every mod config name on every build (even when the type is
-    // not repacked) so ids and compiler symbols are always complete.
+    // not repacked) so ids and compiler symbols are always complete. Also
+    // rejects a name defined twice by the same mod.
     afterRevalidate() {
+        // kind:name -> where this mod first defined it
+        const defined = new Map<string, { file: ModFile; line: number }>();
+
         for (const file of modConfigFiles()) {
+            const kind = file.ext.slice(1);
             const pack = configTypes.get(file.ext)!;
-            for (const name of scanNames(file)) {
-                ModManager.claim(file.ext.slice(1), name, file);
-                ModManager.registerName(file.ext.slice(1), pack, name);
+
+            for (const { name, line } of scanHeaders(file)) {
+                const key = `${kind}:${name}`;
+                const first = defined.get(key);
+                if (first && first.file.mod === file.mod) {
+                    throw ModManager.error(file, line, `Duplicate config found: ${name} (also defined at ${first.file.relPath}:${first.line})`);
+                }
+                defined.set(key, { file, line });
+
+                ModManager.claim(kind, name, file);
+                ModManager.registerName(kind, pack, name);
             }
         }
     },
 
-    configs(_ctx, { extension, configs, parse }) {
+    // Parse with the base parser and rules (parseConfigLines), then add or
+    // replace entries. Later mods in load order replace earlier ones.
+    configs(_ctx, { extension, configs, parse, requiredProperties }) {
         const pack = configTypes.get(extension);
         if (!pack) {
             return;
         }
 
         for (const file of modConfigFiles(extension)) {
-            const lines = fs.readFileSync(file.path, 'utf-8').split(/\r?\n/);
-
-            let debugname: string | null = null;
-            let config: ConfigLine[] = [];
-
-            const flush = () => {
-                if (debugname === null) {
-                    return;
+            parseConfigLines(splitConfigLines(fs.readFileSync(file.path, 'utf-8')), parse, requiredProperties, {
+                error: (line, message) => ModManager.error(file, line, message),
+                onConfig: (debugname, config) => {
+                    if (ModManager.isBaseName(pack, debugname)) {
+                        printInfo(`[mods] ${file.mod.name} replaces base ${extension} [${debugname}]`);
+                    }
+                    configs.set(debugname, config);
                 }
-                if (ModManager.isBaseName(pack, debugname)) {
-                    printInfo(`[mods] ${file.mod.name} overrides base ${extension} ${debugname}`);
-                }
-                configs.set(debugname, config);
-            };
-
-            for (let line of lines) {
-                line = line.trim();
-                if (line.length === 0 || line.startsWith('//')) {
-                    continue;
-                }
-
-                if (line.startsWith('[')) {
-                    flush();
-                    debugname = line.substring(1, line.length - 1);
-                    config = [];
-                    continue;
-                }
-
-                const separator = line.indexOf('=');
-                if (separator === -1) {
-                    continue;
-                }
-
-                const key = line.substring(0, separator);
-                const value = line.substring(separator + 1);
-                const parsed = parse(key, value);
-                if (parsed !== null && parsed !== undefined) {
-                    config.push({ key, value: parsed });
-                }
-            }
-
-            flush();
+            });
         }
     }
 };

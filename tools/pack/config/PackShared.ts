@@ -1,5 +1,4 @@
 import fs from 'fs';
-import readline from 'readline';
 
 import DbTableType from '#/cache/config/DbTableType.js';
 import ParamType from '#/cache/config/ParamType.js';
@@ -139,112 +138,131 @@ export type ConfigPackCallback = (configs: Map<string, ConfigLine[]>, modelFlags
 export type ConfigSaveCallback = (dat: Packet, idx: Packet) => void;
 export type ConfigValidateCallback = (server: Packet, client: Packet) => boolean;
 
+// Receives the result of parseConfigLines.
+export interface ConfigParseSink {
+    // A complete [debugname] block. headerLine is 1-based.
+    onConfig(debugname: string, config: ConfigLine[], headerLine: number): void;
+    // Build the error to throw for a problem at a 1-based line
+    error(line: number, message: string): Error;
+}
+
+// Parse the lines of one config file. Shared by base content (readConfigs)
+// and mods (src/mod/capabilities/configs.ts) so both get the same syntax,
+// constant substitution and validation.
+export function parseConfigLines(lines: string[], parse: ConfigParseCallback, requiredProperties: string[], sink: ConfigParseSink) {
+    let debugname: string | null = null;
+    let headerLine = 0;
+    let config: ConfigLine[] = [];
+
+    const flush = () => {
+        if (debugname === null) {
+            return;
+        }
+
+        // check config keys against requiredProperties
+        for (let i = 0; i < requiredProperties.length; i++) {
+            if (!config.some(value => value.key === requiredProperties[i])) {
+                throw sink.error(headerLine, `Missing required property: ${requiredProperties[i]}`);
+            }
+        }
+
+        sink.onConfig(debugname, config, headerLine);
+    };
+
+    for (let index = 0; index < lines.length; index++) {
+        const line = lines[index];
+        const lineNumber = index + 1;
+
+        if (line.length === 0 || line.startsWith('//')) {
+            continue;
+        }
+
+        if (line.startsWith('[')) {
+            if (!line.endsWith(']')) {
+                throw sink.error(lineNumber, `Missing closing bracket: ${line}`);
+            }
+
+            flush();
+
+            debugname = line.substring(1, line.length - 1); // TODO: .toLowerCase();
+            headerLine = lineNumber;
+            if (!debugname.length) {
+                throw sink.error(lineNumber, 'No config name');
+            }
+
+            config = [];
+            continue;
+        }
+
+        if (debugname === null) {
+            throw sink.error(lineNumber, `Property outside of a [config] block: ${line}`);
+        }
+
+        const separator = line.indexOf('=');
+        if (separator === -1) {
+            throw sink.error(lineNumber, `Missing property separator: ${line}`);
+        }
+
+        const key = line.substring(0, separator);
+        let value = line.substring(separator + 1);
+
+        for (let i = 0; i < value.length; i++) {
+            // check the value for a constant starting with ^ and ending with a \r, \n, comma, or otherwise end of string
+            // then replace just that substring with CONSTANTS.get(value) if CONSTANTS.has(value) returns true
+
+            if (value[i] === '^') {
+                const start = i;
+                let end = i + 1;
+
+                while (end < value.length) {
+                    if (value[end] === '\r' || value[end] === '\n' || value[end] === ',' || value[end] === ' ') {
+                        break;
+                    }
+
+                    end++;
+                }
+
+                const constant = value.substring(start + 1, end);
+                if (CONSTANTS.has(constant)) {
+                    value = value.substring(0, start) + CONSTANTS.get(constant) + value.substring(end);
+                }
+
+                i = end;
+            }
+        }
+
+        const parsed = parse(key, value);
+        if (parsed === null) {
+            throw sink.error(lineNumber, `Invalid property value: ${line}`);
+        } else if (typeof parsed === 'undefined') {
+            throw sink.error(lineNumber, `Invalid property key: ${line}`);
+        }
+
+        config.push({ key, value: parsed });
+    }
+
+    flush();
+}
+
+export function splitConfigLines(text: string): string[] {
+    return text.split(/\r\n|\n|\r/);
+}
+
 export async function readConfigs(dirTree: Set<string>, extension: string, requiredProperties: string[], modelFlags: number[], parse: ConfigParseCallback, pack: ConfigPackCallback, saveClient: ConfigSaveCallback, saveServer: ConfigSaveCallback, validate?: ConfigValidateCallback) {
     const files = findFiles(dirTree, extension);
 
     const configs = new Map<string, ConfigLine[]>();
     for (const file of files) {
-        const reader = readline.createInterface({
-            input: fs.createReadStream(file)
-        });
-
-        let debugname: string | null = null;
-        let config: ConfigLine[] = [];
-
-        let lineNumber = 0;
-        for await (const line of reader) {
-            lineNumber++;
-
-            if (line.length === 0 || line.startsWith('//')) {
-                continue;
-            }
-
-            if (line.startsWith('[')) {
-                if (!line.endsWith(']')) {
-                    throw parseStepError(file, lineNumber, `Missing closing bracket: ${line}`);
-                }
-
-                if (debugname !== null) {
-                    if (requiredProperties.length > 0) {
-                        // check config keys against requiredProperties
-                        for (let i = 0; i < requiredProperties.length; i++) {
-                            if (!config.some(value => value.key === requiredProperties[i])) {
-                                throw parseStepError(file, -1, `Missing required property: ${requiredProperties[i]}`);
-                            }
-                        }
-                    }
-
-                    configs.set(debugname, config);
-                }
-
-                debugname = line.substring(1, line.length - 1); // TODO: .toLowerCase();
-                if (!debugname.length) {
-                    throw parseStepError(file, lineNumber, 'No config name');
-                }
-
+        parseConfigLines(splitConfigLines(fs.readFileSync(file, 'utf8')), parse, requiredProperties, {
+            // parseStepError takes a 0-based line index
+            error: (line, message) => parseStepError(file, line - 1, message),
+            onConfig: (debugname, config, headerLine) => {
                 if (configs.has(debugname)) {
-                    throw parseStepError(file, lineNumber, `Duplicate config found: ${debugname}`);
+                    throw parseStepError(file, headerLine - 1, `Duplicate config found: ${debugname}`);
                 }
-
-                config = [];
-                continue;
+                configs.set(debugname, config);
             }
-
-            const separator = line.indexOf('=');
-            if (separator === -1) {
-                throw parseStepError(file, lineNumber, `Missing property separator: ${line}`);
-            }
-
-            const key = line.substring(0, separator);
-            let value = line.substring(separator + 1);
-
-            for (let i = 0; i < value.length; i++) {
-                // check the value for a constant starting with ^ and ending with a \r, \n, comma, or otherwise end of string
-                // then replace just that substring with CONSTANTS.get(value) if CONSTANTS.has(value) returns true
-
-                if (value[i] === '^') {
-                    const start = i;
-                    let end = i + 1;
-
-                    while (end < value.length) {
-                        if (value[end] === '\r' || value[end] === '\n' || value[end] === ',' || value[end] === ' ') {
-                            break;
-                        }
-
-                        end++;
-                    }
-
-                    const constant = value.substring(start + 1, end);
-                    if (CONSTANTS.has(constant)) {
-                        value = value.substring(0, start) + CONSTANTS.get(constant) + value.substring(end);
-                    }
-
-                    i = end;
-                }
-            }
-
-            const parsed = parse(key, value);
-            if (parsed === null) {
-                throw parseStepError(file, lineNumber, `Invalid property value: ${line}`);
-            } else if (typeof parsed === 'undefined') {
-                throw parseStepError(file, lineNumber, `Invalid property key: ${line}`);
-            }
-
-            config.push({ key, value: parsed });
-        }
-
-        if (debugname !== null) {
-            if (requiredProperties.length > 0) {
-                // check config keys against requiredProperties
-                for (let i = 0; i < requiredProperties.length; i++) {
-                    if (!config.some(value => value.key === requiredProperties[i])) {
-                        throw parseStepError(file, -1, `Missing required property: ${requiredProperties[i]}`);
-                    }
-                }
-            }
-
-            configs.set(debugname, config);
-        }
+        });
     }
 
     // Mod capabilities inject/replace configs of this type (src/mod/capabilities/configs.ts)

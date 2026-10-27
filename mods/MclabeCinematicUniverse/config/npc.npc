@@ -10,11 +10,8 @@ model6=model_176_idk
 model7=model_275_idk
 head1=model_53_idk_head
 head2=model_81_idk_head
-gender=male
 walkanim=human_walk_f,human_walk_b,human_walk_l,human_walk_r
 readyanim=human_ready
-category=man
-stats=1,1,1,1,1,1
 op1=Talk-to
 op2=Attack
 

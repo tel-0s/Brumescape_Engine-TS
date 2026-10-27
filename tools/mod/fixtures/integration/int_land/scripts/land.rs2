@@ -6,3 +6,7 @@
 
 [opnpc1,int_warden]
 ~chatnpc("<p,neutral>Welcome to the island.");
+
+[oploc1,int_ferry]
+mes("You board the ferry.");
+p_telejump(0_62_50_32_31);

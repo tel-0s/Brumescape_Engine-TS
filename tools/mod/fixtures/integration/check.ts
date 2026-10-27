@@ -75,7 +75,7 @@ const squareCoord = ((62 * 64) << 14) | (50 * 64); // 0_62_50_0_0
 expect(regionRow && regionRow.columnValues[0][0] === squareCoord && regionRow.columnValues[1][0] === ids.dbrow.music_int_theme, 'the musicregion row maps m62_50 to the mod music row');
 
 const scripts = readCompiledScripts();
-for (const name of ['[mapzone,0_62_50]', '[if_button,music:int_theme]']) {
+for (const name of ['[mapzone,0_62_50]', '[if_button,music:int_theme]', '[oploc1,int_ferry]']) {
     expect(scripts.get(name)?.source.includes(staged('int_land', 'land.rs2')), `${name} is compiled from int_land`);
 }
 
@@ -103,7 +103,7 @@ expect(script('[opnpc1,int_warden]')?.info.sourceFilePath.includes(staged('int_q
 expect(script('[label,original_opnpc1_int_warden]')?.info.sourceFilePath.includes(staged('int_land', 'land.rs2')), "@original_opnpc1_int_warden is int_land's script");
 expect(script('[proc,update_questlist]')?.info.sourceFilePath.includes(staged('int_quest', 'quest.rs2')), '[proc,update_questlist] is the quest mod override');
 expect(script('[proc,original_proc_update_questlist]') !== undefined && script('[proc,original_proc_count_questpoints]') !== undefined, 'the base quest procs stay callable as originals');
-expect(script('[queue,int_quest_complete]') !== undefined, '[queue,int_quest_complete] is compiled');
+expect(script('[queue,int_quest_complete]') !== undefined && script('[debugproc,int_quest_stage]') !== undefined, '[queue,int_quest_complete] and the testing debugproc are compiled');
 
 // spawns.json names are checked at build time, so a successful build means int_token resolved
 expect(ids.obj.int_token !== undefined && (await getConfig('obj', 'int_token')) !== null, 'the quest item int_token is packed (and spawned by spawns.json)');

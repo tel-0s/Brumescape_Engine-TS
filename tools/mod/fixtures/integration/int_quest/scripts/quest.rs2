@@ -32,3 +32,11 @@ if (%int_quest = ^int_quest_complete) {
     $points = add($points, ^int_quest_questpoints);
 }
 return($points);
+
+// testing: ::~int_quest_stage 1 sets the stage
+// (a debugproc has no protected access: p_finduid gets it, as in base cheats)
+[debugproc,int_quest_stage](int $stage)
+if (p_finduid(uid) = true) {
+    %int_quest = $stage;
+    ~send_quest_progress(questlist:int_quest, %int_quest, ^int_quest_complete);
+}

@@ -1,0 +1,6 @@
+// a way to reach the island from the mainland (placed by spawns.json)
+[int_ferry]
+name=Ferry
+desc=It goes to the island.
+model=model_loc_63
+op1=Board

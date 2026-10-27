@@ -6,12 +6,23 @@ import Environment from '#/util/Environment.js';
 import FileStream from '#/io/FileStream.js';
 import { MidiPack } from '#tools/pack/PackFile.js';
 import { listFilesExt } from '#tools/pack/Parse.js';
+import ModManager from '#/mod/ModManager.js';
 
 export function packClientMusic(cache: FileStream) {
     const midis = [...listFilesExt(`${Environment.BUILD_SRC_DIR}/jingles`, '.mid'), ...listFilesExt(`${Environment.BUILD_SRC_DIR}/songs`, '.mid')];
+    const files = new Map<string, string>();
     for (const file of midis) {
         const basename = path.basename(file);
-        const id = MidiPack.getByName(basename.substring(0, basename.lastIndexOf('.')));
+        files.set(basename.substring(0, basename.lastIndexOf('.')), file);
+    }
+
+    // Mod songs and jingles replace base files with the same name
+    for (const [name, file] of ModManager.getAssets('midi')) {
+        files.set(name, file);
+    }
+
+    for (const [name, file] of files) {
+        const id = MidiPack.getByName(name);
         const data = fs.readFileSync(file);
         if (data.length) {
             cache.write(3, id, compressGz(data)!, 1);

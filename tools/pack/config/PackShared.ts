@@ -368,10 +368,14 @@ export async function packConfigs(cache: FileStream, modelFlags: number[]) {
     // not a config but we want the server to know all the possible categories
     if (shouldBuildFile(`${Environment.BUILD_SRC_DIR}/pack/category.pack`, 'data/pack/server/category.dat') || shouldBuild('tools/pack/config', '.ts', 'data/pack/server/category.dat')) {
         const dat = Packet.alloc(1);
-        dat.p2(CategoryPack.size);
-        for (let i = 0; i < CategoryPack.size; i++) {
-            dat.p1(1);
-            dat.pjstr(CategoryPack.getById(i));
+        // max, not size: ids of removed mods leave gaps, which are written as
+        // categories without a name
+        dat.p2(CategoryPack.max);
+        for (let i = 0; i < CategoryPack.max; i++) {
+            if (CategoryPack.pack.has(i)) {
+                dat.p1(1);
+                dat.pjstr(CategoryPack.getById(i));
+            }
 
             dat.p1(0);
         }

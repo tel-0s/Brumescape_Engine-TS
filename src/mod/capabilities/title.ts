@@ -4,7 +4,8 @@
 //   title/logo.png, title/runes.png, title/titlebox.png, title/titlebutton.png
 //     (optional title/meta/<name>.opt)
 //   binary/title.jpg  (background)
-// Each file replaces the base one. Later mods in load order win (warning).
+// Each file replaces the base one. Later mods in load order win (warning);
+// the same name twice in one mod (logo.png and logo.PNG) is an error.
 // tools/pack/sprite/title.ts reads ModManager.getAsset('title', <name>) and
 // ModManager.getAsset('binary', 'title'), so the result lands in cache
 // archive 0 file 1 and the normal CRC table covers it.
@@ -23,7 +24,10 @@ const capability: ModCapability = {
                 ModManager.warn(file, null, `unknown title sprite (expected one of: ${TITLE_SPRITES.join(', ')}); ignored`);
                 continue;
             }
-            ModManager.claim('title', file.name, file);
+            const previous = ModManager.claim('title', file.name, file);
+            if (previous && previous.mod === file.mod) {
+                throw ModManager.error(file, null, `title sprite ${file.name} is also defined by ${previous.relPath}`);
+            }
             ModManager.setAsset('title', file.name, file.path);
         }
 
@@ -31,7 +35,10 @@ const capability: ModCapability = {
             if (file.name !== 'title') {
                 continue;
             }
-            ModManager.claim('binary', file.name, file);
+            const previous = ModManager.claim('binary', file.name, file);
+            if (previous && previous.mod === file.mod) {
+                throw ModManager.error(file, null, `binary/${file.name} is also defined by ${previous.relPath}`);
+            }
             ModManager.setAsset('binary', file.name, file.path);
         }
     }

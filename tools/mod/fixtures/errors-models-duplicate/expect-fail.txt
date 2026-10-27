@@ -1,0 +1,1 @@
+[mod dup_models] models/b/dup_rock.ob2: model dup_rock is also defined by models/a/dup_rock.ob2

@@ -268,7 +268,7 @@ async function createMod(args: string[]) {
             `[proc,${id}_init]`,
             'def_int $unused = 0;',
             '',
-            `// In game (as a developer): ::${id}`,
+            `// In game: ::~${id} (debugprocs run with ::~<name> when NODE_PRODUCTION is false)`,
             `[debugproc,${id}]`,
             `mes("${modName} is installed.");`,
             ''

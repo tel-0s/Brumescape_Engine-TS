@@ -310,6 +310,10 @@ class World {
             }
         }
 
+        // A repack rewrote data/pack: drop OnDemand's memoized reads so the CRC
+        // table, /title and the other served files follow the new cache.
+        OnDemand.cache.clearPacked();
+
         // todo: check if any jag files changed (transmitted) then reload crcs, instead of always
         makeCrcs();
     }

@@ -32,6 +32,15 @@ export default class FileStream {
         }
     }
 
+    // Forget memoized reads. read() keeps every file it returns, so a long-lived
+    // FileStream (OnDemand.cache) must call this after the cache on disk was
+    // rewritten, e.g. by a hot repack.
+    clearPacked(): void {
+        for (let i: number = 0; i < this.packed.length; i++) {
+            this.packed[i] = [];
+        }
+    }
+
     count(index: number): number {
         if (index < 0 || index > this.idx.length || !this.idx[index]) {
             return 0;

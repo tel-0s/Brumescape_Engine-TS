@@ -4,6 +4,7 @@ import { parentPort } from 'worker_threads';
 
 import { packClient, packServer } from '#tools/pack/PackAll.js';
 import Environment from '#/util/Environment.js';
+import ModManager from '#/mod/ModManager.js';
 
 // todo: this file queue is so the rebuild/reload process can utilize the additional context
 let processNextQueue: Set<string> = new Set();
@@ -91,6 +92,40 @@ function trackDir(dir: string) {
     }
 }
 
+// Mods: one recursive watcher on the whole mods dir, so edits inside any mod,
+// newly added mods and mods.json toggles all trigger a rebuild. The build's
+// fingerprint (ModManager.beginBuild) decides what has to be repacked.
+function trackModsDir(dir: string) {
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+
+    const onChange = (filename: string) => {
+        // the build itself writes idmap.json; dotfiles are editor/OS noise
+        if (filename === 'idmap.json' || filename.split(/[\\/]/).some(part => part.startsWith('.'))) {
+            return;
+        }
+        trackFileChange(path.join(dir, filename));
+    };
+
+    try {
+        fs.watch(dir, { recursive: true }, (_event, filename) => {
+            if (filename) {
+                onChange(filename.toString());
+            }
+        });
+    } catch (_err) {
+        // recursive watching is not supported here: watch the root and every
+        // directory below it (directories added later are not picked up)
+        fs.watch(dir, (_event, filename) => {
+            if (filename) {
+                onChange(filename.toString());
+            }
+        });
+        trackDir(dir);
+    }
+}
+
 if (parentPort) {
     parentPort.on('message', msg => {
         if (msg.type === 'world_rebuild') {
@@ -111,3 +146,4 @@ trackDir(`${Environment.BUILD_SRC_DIR}/models`);
 trackDir(`${Environment.BUILD_SRC_DIR}/textures`);
 trackDir(`${Environment.BUILD_SRC_DIR}/synth`);
 trackDir(`${Environment.BUILD_SRC_DIR}/wordenc`);
+trackModsDir(ModManager.modsDir);

@@ -31,6 +31,8 @@ The capabilities that exist now are the reference examples:
 | `script-overrides.ts` | `scripts/**/*.rs2` that redefine a script | Slot A. Plans override chains in `afterRevalidate` (registers the generated `original_*` names). In `beforeCompile`: renames replaced blocks, stages base files under `data/pack/mods/overrides/` and omits the originals (`CompilerConfig.omit`). |
 | `spawns.ts` | `spawns.json` | `worldBoot`: places npcs and locs. |
 | `init.ts` | mod.json `"init"` | `worldBoot`: runs `[proc,<init>]`. |
+| `data.ts` | `config/**/*.constant`, `.dbtable`, `.dbrow`, `.flo`, `category=` | `constants` hook merges constants (and `afterSymbols` rewrites `constant.sym`); registers the three config types with `registerConfigType`; registers categories in `afterRevalidate`; validates floor ids in `configs`. |
+| `audio.ts` | `synth/*.synth`, `songs/*.mid`, `jingles/*.mid` | `registerName` plus `setAsset('synth'/'midi'/'midikind', …)`. `sound/pack.ts`, `midi/pack.ts` and `versionlist/pack.ts` read the assets. `worldBoot` re-registers the midi names, because `midi_song` looks names up in the server's `MidiPack`. `src/mod/SynthFormat.ts` validates wave files. |
 
 ## The build pipeline and its hook points
 
@@ -201,7 +203,7 @@ Also exported:
   one more config type injectable from `config/`. The type must go through
   `readConfigs`, and its symbols must come from the in-memory pack in
   `tools/pack/CompilerSymbols.ts`. The idmap kind is the extension without the
-  dot. `.dbtable`, `.dbrow` and `.flo` are not registered yet.
+  dot. `.dbtable`, `.dbrow` and `.flo` are registered by `data.ts`.
 - `#/mod/capabilities/scripts.js`: `scriptStagingRoot()` returns
   `data/pack/mods/scripts`, `stagedScripts()` the staged mod script files,
   and `scanScriptHeaders(file)` the `[trigger,subject]` names in a file with

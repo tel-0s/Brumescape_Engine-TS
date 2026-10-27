@@ -1,0 +1,5 @@
+// constants for the data-audio fixture
+^da_stage = 7
+^da_price = 25
+^da_label = "Ranger's pass"
+^da_vis = 33

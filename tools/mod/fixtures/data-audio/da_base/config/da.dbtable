@@ -1,0 +1,5 @@
+[da_shops]
+column=npc,npc,INDEXED,REQUIRED
+column=price,int,REQUIRED
+column=song,string
+default=song,none

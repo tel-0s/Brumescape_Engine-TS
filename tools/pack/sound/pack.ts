@@ -8,6 +8,7 @@ import { listFilesExt } from '#tools/pack/Parse.js';
 import Environment from '#/util/Environment.js';
 import { loadOrder } from '#tools/pack/NameMap.js';
 import { SynthPack } from '#tools/pack/PackFile.js';
+import ModManager from '#/mod/ModManager.js';
 
 export function packClientSound(cache: FileStream) {
     const order = loadOrder(`${Environment.BUILD_SRC_DIR}/pack/synth.order`);
@@ -24,10 +25,24 @@ export function packClientSound(cache: FileStream) {
         nameToFile.set(name, file);
     }
 
+    // Mod synths replace base files with the same name; new names are
+    // appended after the base order, by id (mods never reorder base sounds)
+    for (const [name, file] of ModManager.getAssets('synth')) {
+        nameToFile.set(name, file);
+    }
+    const ids = [...order];
+    const inOrder = new Set(order);
+    for (const name of [...SynthPack.modNames].sort((a, b) => SynthPack.getByName(a) - SynthPack.getByName(b))) {
+        const id = SynthPack.getByName(name);
+        if (!inOrder.has(id)) {
+            ids.push(id);
+        }
+    }
+
     const jag = Jagfile.new();
 
     const out = Packet.alloc(5);
-    for (const id of order) {
+    for (const id of ids) {
         const name = SynthPack.getById(id);
         if (!name) {
             continue;
@@ -44,7 +59,7 @@ export function packClientSound(cache: FileStream) {
     }
     out.p2(-1);
 
-    if (Environment.BUILD_VERIFY && !Packet.checkcrc(out.data, 0, out.pos, -1570057128)) {
+    if (ModManager.shouldVerify('.synth') && !Packet.checkcrc(out.data, 0, out.pos, -1570057128)) {
         throw new Error('.synth checksum mismatch!\nYou can disable this safety check by setting BUILD_VERIFY=false');
     }
 

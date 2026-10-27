@@ -1,0 +1,1 @@
+[mod m] synth/bad_wave.synth: Not a valid synth wave: unexpected end of data

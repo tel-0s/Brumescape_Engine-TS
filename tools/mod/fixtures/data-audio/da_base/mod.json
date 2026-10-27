@@ -1,0 +1,6 @@
+{
+    "name": "da_base",
+    "version": "1.0.0",
+    "author": "fixtures",
+    "description": "Data and audio fixture: constants, dbtable/dbrow, flo, categories, synth, songs, jingles"
+}

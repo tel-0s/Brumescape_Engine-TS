@@ -1,0 +1,3 @@
+// replaces a constant of another mod, and (with the same value) a base constant
+override ^da_price = 40
+override ^true = 1

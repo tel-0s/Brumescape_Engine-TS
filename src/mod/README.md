@@ -23,11 +23,12 @@ The capabilities that exist now are the reference examples:
 
 | Module | Mod input | Technique |
 | --- | --- | --- |
-| `configs.ts` | `config/**/*.<type>` | Registers names in `afterRevalidate`. Injects parsed configs in the `configs` hook. Exports `registerConfigType`. |
+| `configs.ts` | `config/**/*.<type>`, `config/patch/**/*.<type>` | Registers names in `afterRevalidate`. Injects parsed configs in the `configs` hook, then applies patches (`src/mod/ConfigPatch.ts`), mod by mod. Exports `registerConfigType`. |
 | `models.ts` | `models/**/*.ob2` | `registerName` plus `setAsset('model', …)`. `tools/pack/graphics/pack.ts` reads `getAssets('model')`. |
 | `textures.ts` | `textures/**/*.png` | `registerName` plus `setAsset('texture', …)`. `tools/pack/sprite/textures.ts` reads `getAsset`. |
 | `title.ts` | `title/*.png`, `binary/title.jpg` | `setAsset` only. `tools/pack/sprite/title.ts` reads `getAsset`. |
 | `scripts.ts` | `scripts/**/*.rs2` | Stages files in `prepare`, registers script names, adds a compiler source in `beforeCompile`. |
+| `script-overrides.ts` | `scripts/**/*.rs2` that redefine a script | Slot A. Plans override chains in `afterRevalidate` (registers the generated `original_*` names). In `beforeCompile`: renames replaced blocks, stages base files under `data/pack/mods/overrides/` and omits the originals (`CompilerConfig.omit`). |
 | `spawns.ts` | `spawns.json` | `worldBoot`: places npcs and locs. |
 | `init.ts` | mod.json `"init"` | `worldBoot`: runs `[proc,<init>]`. |
 
@@ -202,8 +203,15 @@ Also exported:
   `tools/pack/CompilerSymbols.ts`. The idmap kind is the extension without the
   dot. `.dbtable`, `.dbrow` and `.flo` are not registered yet.
 - `#/mod/capabilities/scripts.js`: `scriptStagingRoot()` returns
-  `data/pack/mods/scripts`, and `scanScriptHeaders(file)` returns the
-  `[trigger,subject]` names in a file with their line numbers.
+  `data/pack/mods/scripts`, `stagedScripts()` the staged mod script files,
+  and `scanScriptHeaders(file)` the `[trigger,subject]` names in a file with
+  their line numbers (headers inside comments are skipped).
+- `#/mod/RuneScriptSource.js`: reads `.rs2` text without the compiler:
+  `scanScriptBlocks(lines)` (header, line range, signature text of every
+  block), `parseSignature`, `renameHeader`, `findLabelJumps`,
+  `findReferences`, `replaceReferences`.
+- `#/mod/ConfigPatch.js`: `parsePatch(lines, parse)` and
+  `applyPatch(extension, config, block)`, the config patch format.
 - `#tools/pack/config/PackShared.js`: `parseConfigLines(lines, parse,
   requiredProperties, sink)` and `splitConfigLines(text)`. Base content and
   mods use this one config parser.
@@ -243,8 +251,9 @@ Also exported:
 - **A mod name equal to a base name replaces the base entry** (configs,
   models, textures, title sprites). Log it with `printInfo` so it is visible.
 - **Two definitions in the same mod** are an error (configs, scripts).
-- Scripts are the exception for now. Redefining a base or another mod's
-  `[trigger,subject]` is an error until the script override capability exists.
+- Scripts follow the same rule. A `[trigger,subject]` that base content or
+  an earlier mod defines is replaced (`script-overrides.ts`); the replaced
+  block is still compiled as `[label|proc,original_<trigger>_<subject>]`.
 
 ## Invalidation: the mod-set fingerprint
 
@@ -313,6 +322,13 @@ still parses and type-checks excluded files, so a duplicate
 `[trigger,subject]` still fails. (Tested: a staged copy of `hans.rs2` plus
 `omit` compiles, and `[opnpc1,hans]` comes from the staged copy. The same
 with `excluded` fails with "already defined".)
+
+`script-overrides.ts` uses this for every base file with a replaced block.
+It also edits the staged mod copies in place (renamed headers, rewritten
+`original_*` references) and writes line-preserving copies of single blocks
+under `data/pack/mods/overrides/copies/`. Each generated script name must be
+registered in the `ScriptPack` in `afterRevalidate`: the compiler fails on a
+script that has no id in `runescript.sym`.
 
 The scripts capability stages each mod's scripts as
 `data/pack/mods/scripts/<mod name>/<path under scripts/>`. Compiler errors

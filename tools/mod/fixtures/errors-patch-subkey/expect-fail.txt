@@ -1,0 +1,1 @@
+[mod subkey] config/patch/npc.npc:3: op1 is not a list with sub-keys in .npc configs; use -op1 to remove it

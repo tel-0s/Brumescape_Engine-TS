@@ -1,0 +1,20 @@
+// Base content has no [opnpc1,man]. The man npc has category=citizen, so
+// talking to him normally runs [opnpc1,_citizen]. This new type-specific
+// script shadows it for man only, and @original_opnpc1_man jumps to a copy of
+// [opnpc1,_citizen].
+[opnpc1,man]
+if (%override_demo_stage = 1) {
+    ~chatnpc("<p,sad>Have you seen my cat? I lost him near the castle.");
+    return;
+}
+@original_opnpc1_man;
+
+// Replaces base [opnpc1,hans]; the base block is still compiled, as
+// [label,original_opnpc1_hans].
+[opnpc1,hans]
+if (%override_demo_stage = 0) {
+    ~chatnpc("<p,neutral>Psst! A man in town has lost his cat.");
+    %override_demo_stage = 1;
+    return;
+}
+@original_opnpc1_hans;

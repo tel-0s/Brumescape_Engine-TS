@@ -1,0 +1,9 @@
+// val is a list keyed by the enum key
+[quest_names_enum]
+val=1,Cook's Assistant (patched)
+-val=5
+val=100,The Lost Cat
+
+// autoint enums have no keys: + appends a value
+[levelup_unlocks_attack]
++val=99

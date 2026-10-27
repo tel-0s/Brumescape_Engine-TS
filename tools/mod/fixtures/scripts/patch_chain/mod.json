@@ -1,0 +1,1 @@
+{ "name": "patch_chain", "version": "1.0.0", "description": "Patches after patch_demo, and a full replacement that discards a patch", "dependencies": { "patch_demo": "1.0.0" } }

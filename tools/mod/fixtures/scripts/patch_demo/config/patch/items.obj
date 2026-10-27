@@ -1,0 +1,6 @@
+[cake]
+name=Birthday cake
+cost=100
+-iop1
+iop2=Admire
+param=patch_demo_flag,2

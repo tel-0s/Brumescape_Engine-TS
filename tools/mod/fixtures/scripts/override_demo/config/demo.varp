@@ -1,0 +1,3 @@
+[override_demo_stage]
+scope=perm
+type=int

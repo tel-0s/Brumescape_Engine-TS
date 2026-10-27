@@ -1,0 +1,4 @@
+// numbered keys change one at a time
+[generalshop1]
+stock2=jug_empty,7,100
+-stock8

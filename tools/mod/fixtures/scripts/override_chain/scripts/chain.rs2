@@ -1,0 +1,15 @@
+// override_demo already overrides these. This mod is later in the load order
+// (it depends on override_demo), so its blocks win, and each original below
+// reaches override_demo's version, which reaches base content.
+[opnpc1,man]
+if (%override_demo_stage = 2) {
+    ~chatnpc("<p,happy>You found my cat! Thank you!");
+    return;
+}
+@original_opnpc1_man;
+
+[opnpc1,hans]
+@original_opnpc1_hans;
+
+[proc,count_questpoints]()(int)
+return(add(~original_proc_count_questpoints, 0));

@@ -1,0 +1,14 @@
+// Only the listed properties change; everything else stays as base content has it.
+[man]
+name=Bob
+op3=Steal-from
+-op2
+// param is a list keyed by the param name: replace one, remove one, add one
+param=stabdefence,5
+-param=slashdefence
+param=patch_demo_flag,1
+vislevel=5
+
+// patch_chain replaces hans entirely later, so this patch is discarded (warning)
+[hans]
+op3=Ask about the cat

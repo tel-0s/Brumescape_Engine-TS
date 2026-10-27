@@ -1,0 +1,1 @@
+[mod noorig] scripts/new.rs2:3: [proc,noorig_helper] does not replace an existing script, so ~original_proc_noorig_helper does not exist

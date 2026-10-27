@@ -1,0 +1,4 @@
+// base [opnpc1,borderguard1] jumps to a label, so its original cannot be a proc
+[opnpc1,borderguard1]
+~original_opnpc1_borderguard1;
+mes("after");

@@ -1,0 +1,4 @@
+// the same script again in the same mod: an error
+
+[opnpc1,hans]
+mes("hi again");

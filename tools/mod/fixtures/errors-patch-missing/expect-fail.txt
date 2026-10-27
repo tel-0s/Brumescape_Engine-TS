@@ -1,0 +1,1 @@
+[mod missing] config/patch/npc.npc:1: .npc [no_such_npc] does not exist in base content or an earlier mod. A patch can only change an existing config; define new configs outside config/patch/

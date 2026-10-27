@@ -1,0 +1,1 @@
+[mod foreign] scripts/other.rs2:3: @original_opnpc1_hans is the original of a script this mod does not define

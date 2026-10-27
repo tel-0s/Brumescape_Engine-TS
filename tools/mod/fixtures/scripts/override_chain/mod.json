@@ -1,0 +1,1 @@
+{ "name": "override_chain", "version": "1.0.0", "description": "Overrides override_demo's overrides again", "dependencies": { "override_demo": "1.0.0" } }

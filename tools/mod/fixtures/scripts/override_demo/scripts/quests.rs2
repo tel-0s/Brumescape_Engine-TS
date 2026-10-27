@@ -1,0 +1,12 @@
+// Procs used by base content: every base caller now runs these. The originals
+// are procs, so they are called (~) and return.
+[proc,count_questpoints]()(int)
+def_int $points = ~original_proc_count_questpoints;
+if (%override_demo_stage = 2) {
+    $points = add($points, 1);
+}
+return($points);
+
+[proc,update_questlist]
+~original_proc_update_questlist;
+// a quest mod colours its own questlist entry here

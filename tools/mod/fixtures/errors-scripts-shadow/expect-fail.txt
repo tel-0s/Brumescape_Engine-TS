@@ -1,0 +1,1 @@
+[mod shadow] scripts/npc.rs2:3: [opnpc1,shadow_npc] does not replace or shadow a script (no [opnpc1,_]), so @original_opnpc1_shadow_npc does not exist

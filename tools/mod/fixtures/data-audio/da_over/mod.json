@@ -1,0 +1,7 @@
+{
+    "name": "da_over",
+    "version": "1.0.0",
+    "author": "fixtures",
+    "description": "Loads after da_base and overrides its data, plus one base constant, floor, row, synth and song",
+    "dependencies": { "da_base": "1.0.0" }
+}

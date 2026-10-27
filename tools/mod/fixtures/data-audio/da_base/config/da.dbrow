@@ -1,0 +1,22 @@
+[da_shop_ranger]
+table=da_shops
+data=npc,da_ranger
+data=price,^da_price
+data=song,da_theme
+
+[da_shop_other]
+table=da_shops
+data=npc,hans
+data=price,^da_stage
+
+// a new row in a BASE table: music for a new area, using a base song row
+[da_musicregion_land]
+table=musicregion
+data=mapsquare,0_200_200_0_0
+data=musicdata,music_Adventure
+
+// replaces a base row by name: this square now plays Adventure instead of Trawler
+[musicregion_29_75]
+table=musicregion
+data=mapsquare,0_29_75_0_0
+data=musicdata,music_Adventure

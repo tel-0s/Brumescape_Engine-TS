@@ -1,0 +1,5 @@
+// a later mod replaces a row of an earlier mod
+[da_shop_other]
+table=da_shops
+data=npc,hans
+data=price,99

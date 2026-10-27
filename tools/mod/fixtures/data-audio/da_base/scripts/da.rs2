@@ -1,0 +1,17 @@
+[opnpc1,da_ranger]
+~da_greet;
+
+[proc,da_greet]
+def_int $stage = ^da_stage;
+def_string $label = ^da_label;
+db_find(da_shops:npc, da_ranger);
+def_dbrow $row = db_findnext;
+def_int $price = db_getfield($row, da_shops:price, 0);
+sound_synth(da_ping, 1, 0);
+sound_synth(bat_death, 1, 0);
+midi_song("da_theme");
+midi_jingle("da_fanfare", 100);
+mes("<tostring($stage)> <tostring($price)> <$label>");
+
+[mapzone,0_200_200]
+midi_song("da_theme");

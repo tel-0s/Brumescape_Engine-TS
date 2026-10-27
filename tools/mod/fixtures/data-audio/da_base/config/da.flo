@@ -1,0 +1,15 @@
+[da_underlay]
+colour=0x225544
+
+[da_overlay]
+overlay=yes
+colour=0x884422
+occlude=no
+
+[da_overlay_tex]
+overlay=yes
+texture=planks
+
+// replaces the base floor 'lightgrass'
+[lightgrass]
+colour=0x00FF00

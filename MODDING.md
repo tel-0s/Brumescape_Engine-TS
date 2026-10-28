@@ -165,12 +165,14 @@ You write names everywhere: `model1=my_model`, `0 30 30: my_tree`,
 - The ids of a removed mod stay reserved in `idmap.json`, so a later mod
   never reuses them. This leaves gaps in the ids; the build packs an empty
   config (or a placeholder texture) for each one.
-- New base content never takes a mod id: when base content gets a new
-  config or script, the build gives it an id after every id in
-  `idmap.json`. Only a hand-written line in `content/pack/<kind>.pack` can
-  take a mod id. For a varp, inv or obj (saves store these ids) the build
-  then stops and names a free id; for any other kind the mod name moves to a
-  new id with a warning.
+- New base content never takes the id of a mod varp, inv or obj (saves
+  store these ids): when base content gets a new one, the build gives it an
+  id after every id in `idmap.json`. Only a hand-written line in
+  `content/pack/<kind>.pack` can take such an id, and the build then stops
+  and names a free id. For every other kind (npcs, locs, scripts, enums,
+  ...), new base content takes the next id after base content, and a mod
+  name that has that id moves to a new id with a warning. Saves do not
+  store these ids, and the build repacks everything that uses them.
 - Mod ids depend on the install: two servers with different mods give
   different ids to the same name. **Never write a numeric id for something
   that a mod defines.** Use the name.

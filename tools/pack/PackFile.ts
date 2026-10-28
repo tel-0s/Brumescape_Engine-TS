@@ -76,13 +76,18 @@ function validateImagePack(pack: PackFile, path: string, ext: string): void {
     pack.save();
 }
 
-// The id for the next new base name of a pack: after base content and after
-// every id that mods/idmap.json keeps for mod names of the same kind (the
-// idmap kind is the pack type). Mod ids follow base content, so without this
-// a new base name would take the first mod id, and player saves that hold
-// that mod varp or obj would point at the base name.
+// The id for the next new base name of a pack. For kinds that player saves
+// store (varp, inv, obj) it comes after every id that mods/idmap.json keeps
+// for mod names of the same kind (the idmap kind is the pack type): mod ids
+// follow base content, so without this a new base name would take the first
+// mod id, and saves that hold that mod varp or obj would point at the base
+// name. Other kinds stay contiguous after base content. This matters for the
+// server-only packs that `bun run clean` deletes (script, enum, param, ...):
+// when they are regenerated every base name is new, and reserving would push
+// all of base content past the mod ids, further on every clean. A mod name
+// that base content takes there moves to a new id (ModManager.assignId).
 function nextBaseId(pack: PackFile): number {
-    return Math.max(pack.max, ModManager.reservedIdEnd(pack.type));
+    return ModManager.isSavedKind(pack.type) ? Math.max(pack.max, ModManager.reservedIdEnd(pack.type)) : pack.max;
 }
 
 function validateConfigPack(pack: PackFile, ext: string, transmitted: boolean = false): void {

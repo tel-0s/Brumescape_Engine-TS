@@ -461,6 +461,13 @@ class ModManager {
         return id;
     }
 
+    // True for kinds whose ids player saves store (varp, inv, obj). Only these
+    // need base content to keep clear of mod ids; for any other kind a mod
+    // name that base content takes simply moves (see assignId).
+    isSavedKind(kind: string): boolean {
+        return SAVED_KINDS.has(kind);
+    }
+
     // One past the highest id that idmap.json keeps for `kind`, for enabled,
     // disabled and removed mods alike (0 when there is none). Base packers
     // (tools/pack/PackFile.ts) give new base names ids from here on, so base

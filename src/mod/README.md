@@ -252,11 +252,17 @@ Also exported:
   inventories with mod objs) keeps meaning the same thing. The gap that a
   removed mod leaves is packed as an empty config. Packers must accept gaps
   (`configs.get(name)` can be undefined).
-- **Base ids keep clear of mod ids**: the base packers in
-  `tools/pack/PackFile.ts` (`validateConfigPack`, `regenScriptPack`) give a
-  new base name the id `max(pack.max, ModManager.reservedIdEnd(kind))`: after
-  every id that `idmap.json` (and the default `mods/idmap.json`, during a
-  build against another mods dir) keeps for that kind.
+- **Base ids keep clear of saved mod ids**: for `varp`, `inv` and `obj`
+  (`ModManager.isSavedKind`), the base packers in `tools/pack/PackFile.ts`
+  (`validateConfigPack`, `regenScriptPack`) give a new base name the id
+  `max(pack.max, ModManager.reservedIdEnd(kind))`: after every id that
+  `idmap.json` (and the default `mods/idmap.json`, during a build against
+  another mods dir) keeps for that kind. Every other kind gives new base
+  names `pack.max`, so base ids stay contiguous. This matters after
+  `bun run clean`, which deletes the server-only packs (script, enum, param,
+  ...): reserving there would push all of base content past the mod ids,
+  further on every clean. A mod name that base content takes then moves
+  (next point).
 - **Base-occupant guard**: base content can still take a recorded mod id
   through a hand-written line in `content/pack/<kind>.pack`. For `varp`,
   `inv` and `obj` (player saves store these ids) the build then stops and

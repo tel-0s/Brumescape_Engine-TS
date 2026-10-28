@@ -1,0 +1,53 @@
+// Rows players between the mainland pier and Tern Isle (one on each side).
+// Looks like the Port Sarim sailors (seaman_lorris).
+[tern_boatman]
+vislevel=hide
+name=Boatman
+desc=He rows folk out to Tern Isle and back.
+walkanim=human_walk_f,human_walk_b,human_walk_l,human_walk_r
+readyanim=human_ready
+op1=Talk-to
+recol1s=2340
+recol1d=4234
+recol2s=14724
+recol2d=4334
+recol3s=14801
+recol3d=24075
+recol4s=6273
+recol4d=4226
+model1=model_217_idk
+model2=model_246_idk
+model3=model_292_idk
+model4=model_151_idk
+model5=model_176_idk
+model6=model_254_idk
+model7=model_181_idk
+model8=model_194_npc
+head1=model_55_idk_head
+head2=model_37_npc_head
+// Stays on his pier so players can find him.
+wanderrange=0
+
+// The island's only resident. Looks like the fishing platform fishermen.
+[tern_hermit]
+vislevel=hide
+name=Old Halvard
+desc=A weathered old fisherman who shares his island with the birds.
+walkanim=human_walk_f,human_walk_b,human_walk_l,human_walk_r
+readyanim=human_ready
+op1=Talk-to
+recol1s=2340
+recol1d=11620
+recol2s=14724
+recol2d=4226
+model1=model_208_npc
+model2=model_250_idk
+model3=model_292_idk
+model4=model_162_idk
+model5=model_176_idk
+model6=model_265_obj_wear
+model7=model_181_idk
+model8=model_562_obj_wear
+head1=model_48_npc_head
+head2=model_82_idk_head
+wanderrange=2

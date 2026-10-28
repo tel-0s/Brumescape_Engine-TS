@@ -12,9 +12,11 @@
         }
     },
     "npc": {
-        "next": 1056,
+        "next": 1058,
         "ids": {
-            "jemery_mclabe": 1055
+            "jemery_mclabe": 1055,
+            "tern_boatman": 1056,
+            "tern_hermit": 1057
         }
     },
     "obj": {
@@ -42,12 +44,22 @@
         }
     },
     "script": {
-        "next": 8342,
+        "next": 8346,
         "ids": {
             "[opnpc1,jemery_mclabe]": 8338,
             "[oploc1,olive_oil_barrel]": 8339,
             "[opheld1,danvids_olive_oil]": 8340,
-            "[debugproc,mclabe_quote]": 8341
+            "[debugproc,mclabe_quote]": 8341,
+            "[opnpc1,tern_boatman]": 8342,
+            "[label,tern_boatman_island]": 8343,
+            "[opnpc1,tern_hermit]": 8344,
+            "[debugproc,ternisle]": 8345
+        }
+    },
+    "flo": {
+        "next": 90,
+        "ids": {
+            "tern_shingle": 89
         }
     }
 }

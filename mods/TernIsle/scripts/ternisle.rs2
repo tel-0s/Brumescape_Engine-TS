@@ -1,0 +1,56 @@
+// Tern Isle: a small seabird island in the strait between Rimmington,
+// Port Sarim and Karamja. The map is maps/m46_49.patch.jm2.
+
+[opnpc1,tern_boatman]
+// The same npc stands on both piers; the player's position picks the dialogue.
+if (inzone(0_46_49_10_18, 0_46_49_40_46, coord) = true) {
+    @tern_boatman_island;
+}
+~chatnpc("<p,neutral>Ahoy there. Fancy a row out to Tern Isle?");
+~chatnpc("<p,neutral>Nothing out there but terns, gulls and old Halvard, mind. Won't cost you a coin.");
+def_int $option = ~p_choice2("Yes please.", 1, "No, thank you.", 2);
+if ($option = 1) {
+    ~chatplayer("<p,happy>Yes please.");
+    mes("You climb into the rowboat...");
+    p_delay(2);
+    p_telejump(0_46_49_36_32);
+    mes("...and the boatman rows you across to Tern Isle.");
+} else {
+    ~chatplayer("<p,neutral>No, thank you.");
+}
+
+[label,tern_boatman_island]
+~chatnpc("<p,neutral>Seen enough birds? I can row you back to the mainland.");
+def_int $option = ~p_choice2("Take me back, please.", 1, "Not yet.", 2);
+if ($option = 1) {
+    ~chatplayer("<p,happy>Take me back, please.");
+    mes("You climb into the rowboat...");
+    p_delay(2);
+    p_telejump(0_46_49_45_30);
+    mes("...and the boatman rows you back to the mainland.");
+} else {
+    ~chatplayer("<p,neutral>Not yet.");
+}
+
+[opnpc1,tern_hermit]
+~chatnpc("<p,quiz>A visitor? Don't get many of those. Mind the terns, they nest on the shingle.");
+def_int $option = ~p_choice3("Why do you live out here?", 1, "What is this place?", 2, "I'll leave you to it.", 3);
+if ($option = 1) {
+    ~chatplayer("<p,quiz>Why do you live out here?");
+    ~chatnpc("<p,neutral>Forty years I fished out of Port Sarim. Then one spring I rowed out here to mend a net, and the terns made me feel welcome. Never went back.");
+    ~chatnpc("<p,happy>The monks across the water pray for me now and then. I pray for good weather.");
+} else if ($option = 2) {
+    ~chatplayer("<p,quiz>What is this place?");
+    ~chatnpc("<p,neutral>Tern Isle. Sailors on the Karamja run call it a hazard. I call it home.");
+    ~chatnpc("<p,neutral>There's a bit of copper and tin in the rocks, if you've a pickaxe. Help yourself.");
+} else {
+    ~chatplayer("<p,neutral>I'll leave you to it.");
+}
+
+// In game: ::~ternisle (debugprocs run with ::~<name> when NODE_PRODUCTION is false)
+[debugproc,ternisle]
+// Debugprocs have no protected access; p_finduid gets it for p_ commands.
+if (p_finduid(uid) = true) {
+    p_telejump(0_46_49_26_32);
+    mes("Welcome to Tern Isle.");
+}

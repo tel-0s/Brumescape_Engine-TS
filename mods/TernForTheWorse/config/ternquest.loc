@@ -1,0 +1,9 @@
+// Marks Frank's stash in the shingle (the model of the mud patch in Elena's quest)
+[tern_shingle_mound]
+name=Disturbed shingle
+desc=Someone has dug here, and filled it in again.
+model=model_loc_185
+active=yes
+blockwalk=no
+blockrange=no
+op1=Search

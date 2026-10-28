@@ -1,0 +1,13 @@
+// A Tern for the Worse: quest stages (%tern_quest)
+^tern_quest_started = 1
+^tern_quest_gerrant = 2
+^tern_quest_frank = 3
+^tern_quest_dug = 4
+^tern_quest_returned = 5
+^tern_quest_complete = 6
+^tern_quest_questpoints = 1
+// Where Frank buried his rum: the shingle west of the willow on Tern Isle
+^tern_stash_coord = 0_46_49_16_37
+// Journal line colours
+^tern_journal_todo = 0x000080
+^tern_journal_done = 0x000000

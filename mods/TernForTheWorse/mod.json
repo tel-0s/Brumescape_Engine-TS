@@ -1,0 +1,7 @@
+{
+    "name": "TernForTheWorse",
+    "version": "1.0.0",
+    "author": "tel0s",
+    "description": "A Tern for the Worse: a quest on Tern Isle",
+    "dependencies": { "TernIsle": "1.0.0" }
+}

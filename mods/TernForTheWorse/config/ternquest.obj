@@ -1,0 +1,37 @@
+// A brass whistle Halvard found on the shingle (the magic whistle's model)
+[tern_gull_call]
+name=Gull call
+desc=A brass whistle. It shrieks just like a gull.
+model=model_2433_obj
+2dyof=-2
+2dzoom=490
+2dyan=1208
+2dxan=152
+iop1=Blow
+weight=5g
+tradeable=no
+
+// Frank's buried Karamjan rum (the rum bottle's model)
+[tern_rum]
+name=Frank's rum
+desc=Three bottles of Karamjan rum, wrapped in tarred sailcloth.
+model=model_2660_obj
+2dyof=-1
+2dzoom=970
+2dyan=1888
+2dxan=104
+weight=6lb
+tradeable=no
+
+// Halvard's keepsake: the quest reward (the feather's model)
+[tern_feather]
+name=Tern feather
+desc=A white feather with a black tip. Halvard kept it for forty springs.
+model=model_2476_obj
+2dxof=4
+2dyof=10
+2dzoom=700
+2dyan=692
+2dxan=428
+weight=2g
+tradeable=no

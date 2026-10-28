@@ -1,0 +1,13 @@
+// The quest's entry in the quest list (appended after the members' quests).
+[tern_quest]
+layer=com_0
+type=text
+x=10
+y=end+2
+width=130
+height=14
+buttontype=normal
+font=p12
+shadowed=yes
+text=A Tern for the Worse
+colour=0xFF0000

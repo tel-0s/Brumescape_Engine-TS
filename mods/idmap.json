@@ -6,9 +6,10 @@
         }
     },
     "loc": {
-        "next": 3551,
+        "next": 3552,
         "ids": {
-            "olive_oil_barrel": 3550
+            "olive_oil_barrel": 3550,
+            "tern_shingle_mound": 3551
         }
     },
     "npc": {
@@ -20,15 +21,19 @@
         }
     },
     "obj": {
-        "next": 2979,
+        "next": 2982,
         "ids": {
-            "danvids_olive_oil": 2978
+            "danvids_olive_oil": 2978,
+            "tern_gull_call": 2979,
+            "tern_rum": 2980,
+            "tern_feather": 2981
         }
     },
     "varp": {
-        "next": 310,
+        "next": 311,
         "ids": {
-            "mclabe_grief_stage": 309
+            "mclabe_grief_stage": 309,
+            "tern_quest": 310
         }
     },
     "model": {
@@ -44,7 +49,7 @@
         }
     },
     "script": {
-        "next": 8346,
+        "next": 8362,
         "ids": {
             "[opnpc1,jemery_mclabe]": 8338,
             "[oploc1,olive_oil_barrel]": 8339,
@@ -53,13 +58,35 @@
             "[opnpc1,tern_boatman]": 8342,
             "[label,tern_boatman_island]": 8343,
             "[opnpc1,tern_hermit]": 8344,
-            "[debugproc,ternisle]": 8345
+            "[debugproc,ternisle]": 8345,
+            "[queue,tern_quest_complete]": 8346,
+            "[oploc1,tern_shingle_mound]": 8347,
+            "[oplocu,tern_shingle_mound]": 8348,
+            "[label,tern_dig]": 8349,
+            "[opheld1,tern_gull_call]": 8350,
+            "[if_button,questlist:tern_quest]": 8351,
+            "[proc,tern_done]": 8352,
+            "[proc,tern_journal_line]": 8353,
+            "[proc,tern_journal_clear]": 8354,
+            "[debugproc,tern_quest_stage]": 8355,
+            "[label,original_opnpc1_tern_hermit]": 8356,
+            "[label,original_opnpc1_gerrant]": 8357,
+            "[label,original_opnpc1_redbeard_frank]": 8358,
+            "[label,original_opheld1_spade]": 8359,
+            "[proc,original_proc_update_questlist]": 8360,
+            "[proc,original_proc_count_questpoints]": 8361
         }
     },
     "flo": {
         "next": 90,
         "ids": {
             "tern_shingle": 89
+        }
+    },
+    "interface": {
+        "next": 8144,
+        "ids": {
+            "questlist:tern_quest": 8143
         }
     }
 }

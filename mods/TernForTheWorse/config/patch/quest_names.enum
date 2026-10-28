@@ -1,0 +1,3 @@
+// Adds the quest to the list used by the ::~quest debug cheat.
+[quest_names_enum]
+val=54,A Tern for the Worse

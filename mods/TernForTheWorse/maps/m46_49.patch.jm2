@@ -1,0 +1,4 @@
+// Frank's stash on Tern Isle: a mound of dug-over shingle west of the willow.
+// Applies on top of TernIsle's patch of m46_49 (TernIsle is a dependency).
+==== LOC ====
+0 16 37: tern_shingle_mound 10 0

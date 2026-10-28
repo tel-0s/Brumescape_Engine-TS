@@ -1,0 +1,261 @@
+// A Tern for the Worse: the terns have not come back to Tern Isle this
+// spring. Someone has been calling the gulls in.
+//
+// Stages (%tern_quest, see config/ternquest.constant):
+//   0 not started
+//   1 Halvard gave you a gull call he found on the shingle
+//   2 Gerrant (Port Sarim fishing shop) sold it to Redbeard Frank
+//   3 Frank wants his buried rum dug up from Tern Isle
+//   4 you dug up the rum
+//   5 Frank has his rum and will leave the island alone
+//   6 complete (Halvard)
+
+// ---------------------------------------------------------------- Halvard
+// Overrides TernIsle's [opnpc1,tern_hermit]. After the quest, his usual
+// dialogue (the TernIsle original) runs.
+[opnpc1,tern_hermit]
+def_int $option;
+switch_int (%tern_quest) {
+    case 0 :
+        ~chatnpc("<p,sad>Forty springs the terns have come back to this island. This spring, not one.");
+        ~chatnpc("<p,angry>Just gulls. Gulls everywhere, screaming and squabbling over the shingle like they own it.");
+        ~chatnpc("<p,quiz>And look what I found on the beach this morning. A gull call. Somebody has been out here calling the gulls in.");
+        $option = ~p_choice2("I'll find out who it belongs to.", 1, "Sorry, I'm busy.", 2);
+        if ($option = 2) {
+            ~chatplayer("<p,neutral>Sorry, I'm busy.");
+            ~chatnpc("<p,sad>Aye. Everyone is.");
+            return;
+        }
+        ~chatplayer("<p,happy>I'll find out who it belongs to.");
+        if (inv_freespace(inv) = 0) {
+            ~chatnpc("<p,neutral>Make some room in your pack first, then I'll give it to you.");
+            return;
+        }
+        ~chatnpc("<p,happy>Bless you. Gerrant in Port Sarim sells everything a fisherman could want. He might know who bought it.");
+        inv_add(inv, tern_gull_call, 1);
+        %tern_quest = ^tern_quest_started;
+        ~objbox(tern_gull_call, "Halvard hands you the gull call.", 250, 0, 0);
+        ~send_quest_progress(questlist:tern_quest, %tern_quest, ^tern_quest_complete);
+    case ^tern_quest_started :
+        ~chatnpc("<p,quiz>Any luck with that gull call?");
+        ~chatplayer("<p,neutral>Not yet.");
+        if (inv_total(inv, tern_gull_call) = 0 & inv_freespace(inv) > 0) {
+            ~chatnpc("<p,confused>Lost it? I found another one on the shingle this morning. Here.");
+            inv_add(inv, tern_gull_call, 1);
+        }
+        ~chatnpc("<p,neutral>Try Gerrant, at the fishing shop in Port Sarim.");
+    case ^tern_quest_gerrant :
+        ~chatplayer("<p,neutral>Gerrant says he sold the gull call to Redbeard Frank.");
+        ~chatnpc("<p,angry>Frank! That old sea-dog. Go and give him a piece of my mind.");
+    case ^tern_quest_frank :
+        ~chatplayer("<p,neutral>Frank has been burying rum on the island. The terns kept drawing attention to it, so he called the gulls in.");
+        ~chatnpc("<p,laugh>Rum! On my island! Well, dig it up and give it back to him, if it gets rid of the gulls.");
+    case ^tern_quest_dug :
+        ~chatnpc("<p,shifty>Is that Frank's rum? Get it off my island, before the gulls take a liking to it too.");
+    case ^tern_quest_returned :
+        ~chatplayer("<p,happy>Frank has his rum back. He promised to stop calling the gulls.");
+        if (inv_freespace(inv) = 0) {
+            ~chatnpc("<p,happy>Good news! I have something for you, but your pack is full.");
+            return;
+        }
+        ~chatnpc("<p,happy>Then the gulls will drift back to Port Sarim, and the terns will have the shingle by the next tide.");
+        ~chatnpc("<p,neutral>Here. A tern feather, from my first spring on this island. I'd like you to have it.");
+        queue(tern_quest_complete, 0);
+    case default :
+        ~chatnpc("<p,happy>Hear that? The terns are back on the shingle.");
+        @original_opnpc1_tern_hermit;
+}
+
+[queue,tern_quest_complete]
+%tern_quest = ^tern_quest_complete;
+inv_add(inv, tern_feather, 1);
+stat_advance(fishing, 5000);
+~send_quest_complete(questlist:tern_quest, tern_feather, 250, ^tern_quest_questpoints, "You have completed A Tern for the Worse!");
+
+// ---------------------------------------------------------------- Gerrant
+// Overrides the base Port Sarim fishing shop owner while the player is
+// asking about the gull call; otherwise his normal dialogue (and shop) runs.
+[opnpc1,gerrant]
+if (%tern_quest ! ^tern_quest_started) {
+    @original_opnpc1_gerrant;
+}
+def_int $option = ~p_choice2("Ask about the gull call.", 1, "Talk about something else.", 2);
+if ($option = 2) {
+    @original_opnpc1_gerrant;
+}
+~chatplayer("<p,quiz>Do you know this whistle? I found it on Tern Isle.");
+~chatnpc("<p,quiz>Let's have a look... That's one of my gull calls. Fishermen blow them to bring the gulls in, then follow the gulls to the shoals.");
+~chatnpc("<p,confused>I've only sold one this year, mind. To Redbeard Frank, the old pirate. Can't think what he wanted it for. He's never fished a day in his life.");
+%tern_quest = ^tern_quest_gerrant;
+~send_quest_progress(questlist:tern_quest, %tern_quest, ^tern_quest_complete);
+
+// ---------------------------------------------------------------- Frank
+// Overrides base Redbeard Frank (Pirate's Treasure) only for this quest's
+// stages, and offers his normal dialogue as "something else".
+[opnpc1,redbeard_frank]
+def_int $option;
+if (%tern_quest = ^tern_quest_gerrant) {
+    $option = ~p_choice2("Ask about the gull call.", 1, "Talk about something else.", 2);
+    if ($option = 2) {
+        @original_opnpc1_redbeard_frank;
+    }
+    ~chatplayer("<p,angry>Gerrant says you bought this gull call. Somebody has been using it to drive the terns off Tern Isle.");
+    ~chatnpc("<p,shifty>Arr... terns, ye say? Can't say I know any terns.");
+    ~chatplayer("<p,neutral>Old Halvard lives out there. He's very upset.");
+    ~chatnpc("<p,sad>...Alright, alright. Ye've caught ol' Frank fair and square.");
+    ~chatnpc("<p,shifty>Them Customs men won't let a pirate keep a bottle in peace, so I've been burying me Karamjan rum on that island. Halfway home from Karamja, see?");
+    ~chatnpc("<p,angry>But them terns! Every time I rowed out they'd scream fit to wake the dead. Folk watch the birds, then they watch the island. So I called the gulls in to chase 'em off.");
+    ~chatnpc("<p,neutral>Tell ye what. Dig up me stash and bring it here, and I'll leave the island be. It's in the shingle, west of the willow on the west shore. Ye'll need a spade.");
+    %tern_quest = ^tern_quest_frank;
+    ~send_quest_progress(questlist:tern_quest, %tern_quest, ^tern_quest_complete);
+    return;
+}
+if (%tern_quest = ^tern_quest_frank | %tern_quest = ^tern_quest_dug) {
+    if (inv_total(inv, tern_rum) > 0) {
+        ~chatnpc("<p,laugh>Arrrh! Me rum! Safe and sound!");
+        inv_del(inv, tern_rum, 1);
+        ~objbox(tern_rum, "You hand Frank his rum.", 250, 0, 0);
+        ~chatnpc("<p,neutral>A deal's a deal. No more gull calls. I'll find somewhere quieter for me stash. Somewhere without birds.");
+        ~chatnpc("<p,happy>And ye can keep that whistle. Ye've earned it.");
+        %tern_quest = ^tern_quest_returned;
+        ~send_quest_progress(questlist:tern_quest, %tern_quest, ^tern_quest_complete);
+        return;
+    }
+    $option = ~p_choice2("About your rum on Tern Isle...", 1, "Talk about something else.", 2);
+    if ($option = 2) {
+        @original_opnpc1_redbeard_frank;
+    }
+    ~chatplayer("<p,neutral>About your rum on Tern Isle...");
+    ~chatnpc("<p,quiz>Got it yet? It's in the shingle, west of the willow on the west shore. Ye'll need a spade.");
+    return;
+}
+@original_opnpc1_redbeard_frank;
+
+// ---------------------------------------------------------------- digging
+[oploc1,tern_shingle_mound]
+mes("The shingle here has been dug over, and filled in again.");
+if (%tern_quest = ^tern_quest_frank) {
+    mes("This must be Frank's stash. You'll need a spade to dig it up.");
+}
+
+[oplocu,tern_shingle_mound]
+if (last_useitem = spade) {
+    @tern_dig;
+}
+~displaymessage(^dm_default);
+
+// Overrides the base spade: digging at Frank's stash runs the quest, and
+// digging anywhere else (Pirate's Treasure, clue scrolls, ...) runs the
+// base script.
+[opheld1,spade]
+if (distance(coord, ^tern_stash_coord) <= 1) {
+    @tern_dig;
+}
+@original_opheld1_spade;
+
+[label,tern_dig]
+p_arrivedelay;
+anim(human_dig, 0);
+if (%tern_quest = ^tern_quest_frank | (%tern_quest = ^tern_quest_dug & inv_total(inv, tern_rum) = 0)) {
+    if (inv_freespace(inv) = 0) {
+        mes("You need a free inventory space to take what you've found.");
+        return;
+    }
+    inv_add(inv, tern_rum, 1);
+    if (%tern_quest = ^tern_quest_frank) {
+        %tern_quest = ^tern_quest_dug;
+    }
+    ~objbox(tern_rum, "You dig into the shingle and find three bottles of rum, wrapped in tarred sailcloth.", 250, 0, 0);
+    return;
+}
+mes("You dig into the shingle, but find nothing but pebbles.");
+
+// ---------------------------------------------------------------- items
+[opheld1,tern_gull_call]
+mes("You blow the gull call. It shrieks just like a gull.");
+
+// ---------------------------------------------------------------- journal
+// Clicking the quest list entry opens the base scroll interface as a
+// journal: finished steps in black, the current step in dark blue.
+[if_button,questlist:tern_quest]
+~tern_journal_clear;
+if (%tern_quest = 0) {
+    ~tern_journal_line(scroll:com_3, "I can start this quest by talking to", false);
+    ~tern_journal_line(scroll:com_4, "Old Halvard on Tern Isle. A boatman rows", false);
+    ~tern_journal_line(scroll:com_5, "out to the island from the shore south", false);
+    ~tern_journal_line(scroll:com_6, "of Rimmington.", false);
+    if_openmain(scroll);
+    return;
+}
+~tern_journal_line(scroll:com_2, "Old Halvard says the terns have not come", true);
+~tern_journal_line(scroll:com_3, "back to Tern Isle. He found a gull call.", true);
+~tern_journal_line(scroll:com_4, "I should ask about it in Port Sarim.", ~tern_done(^tern_quest_started));
+if (%tern_quest >= ^tern_quest_gerrant) {
+    ~tern_journal_line(scroll:com_5, "Gerrant sold it to Redbeard Frank.", ~tern_done(^tern_quest_gerrant));
+}
+if (%tern_quest >= ^tern_quest_frank) {
+    ~tern_journal_line(scroll:com_6, "Frank buried rum on the island. I must", ~tern_done(^tern_quest_frank));
+    ~tern_journal_line(scroll:com_7, "dig it up, west of the western willow.", ~tern_done(^tern_quest_frank));
+}
+if (%tern_quest >= ^tern_quest_dug) {
+    ~tern_journal_line(scroll:com_8, "I should take the rum to Frank.", ~tern_done(^tern_quest_dug));
+}
+if (%tern_quest >= ^tern_quest_returned) {
+    ~tern_journal_line(scroll:com_9, "Frank will stop. I should tell Halvard.", ~tern_done(^tern_quest_returned));
+}
+if (%tern_quest >= ^tern_quest_complete) {
+    ~tern_journal_line(scroll:com_11, "QUEST COMPLETE!", false);
+}
+if_openmain(scroll);
+
+// True once the quest is past the given stage
+[proc,tern_done](int $stage)(boolean)
+if (%tern_quest > $stage) {
+    return(true);
+}
+return(false);
+
+[proc,tern_journal_line](component $com, string $text, boolean $done)
+if_settext($com, $text);
+if ($done = true) {
+    if_setcolour($com, ^tern_journal_done);
+} else {
+    if_setcolour($com, ^tern_journal_todo);
+}
+
+[proc,tern_journal_clear]
+if_settext(scroll:com_2, ^string_empty);
+if_settext(scroll:com_3, ^string_empty);
+if_settext(scroll:com_4, ^string_empty);
+if_settext(scroll:com_5, ^string_empty);
+if_settext(scroll:com_6, ^string_empty);
+if_settext(scroll:com_7, ^string_empty);
+if_settext(scroll:com_8, ^string_empty);
+if_settext(scroll:com_9, ^string_empty);
+if_settext(scroll:com_10, ^string_empty);
+if_settext(scroll:com_11, ^string_empty);
+if_settext(scroll:com_12, ^string_empty);
+if_settext(scroll:com_13, ^string_empty);
+
+// ---------------------------------------------------------------- quest list
+// Base procs that list every quest by hand. Each override calls the version
+// it replaced, so other quest mods can do the same.
+[proc,update_questlist]
+~original_proc_update_questlist;
+~send_quest_progress_colour(questlist:tern_quest, %tern_quest, ^tern_quest_complete);
+
+[proc,count_questpoints]()(int)
+def_int $points = ~original_proc_count_questpoints;
+if (%tern_quest = ^tern_quest_complete) {
+    $points = add($points, ^tern_quest_questpoints);
+}
+return($points);
+
+// ---------------------------------------------------------------- testing
+// ::~tern_quest_stage 3 sets the stage (debugprocs need p_finduid for
+// protected access).
+[debugproc,tern_quest_stage](int $stage)
+if (p_finduid(uid) = true) {
+    %tern_quest = $stage;
+    ~send_quest_progress(questlist:tern_quest, %tern_quest, ^tern_quest_complete);
+}

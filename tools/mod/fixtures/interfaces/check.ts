@@ -59,19 +59,29 @@ expect(com('if_journal:frame').scroll === 200, 'frame scroll stays 200 (its cont
 expect(com('if_journal:title').colour === 0x000080, 'if_addon recoloured if_journal:title');
 expect(com('if_journal:line3').text === 'Added by if_addon', 'if_addon added if_journal:line3');
 
-// ---- quest list: two mods append entries without knowing about each other
+// ---- quest list: two mods append members' entries (y=end+2) and insert
+// free entries (y=before:/after:) without knowing about each other.
+// Order of operations: if_base appends if_quest (903, scroll 926), inserts
+// if_free_quest before fortress (+16 from y 23 down, scroll 942); if_addon
+// appends if_quest2 (935, scroll 958), inserts if_free_quest2 after hetty
+// (+16 from y 319 down, scroll 974).
 const questlist = com('questlist');
 expect(questlist.id === base.get('questlist'), 'questlist keeps its base id');
-const quest1 = childAt('questlist:com_0', 'questlist:if_quest');
-const quest2 = childAt('questlist:com_0', 'questlist:if_quest2');
-expect(quest1?.x === 10 && quest1?.y === 903, `if_quest sits below the last base entry (y=${quest1?.y}, want 903)`);
-expect(quest2?.y === 919, `if_quest2 sits below if_quest (y=${quest2?.y}, want 919)`);
-expect(com('questlist:com_0').scroll === 942, `quest list scroll grew from 910 to 942 (got ${com('questlist:com_0').scroll})`);
+const at = (name: string) => childAt('questlist:com_0', `questlist:${name}`)?.y;
+expect(at('com_24') === 8, `the FREE QUESTS heading stays at 8 (got ${at('com_24')})`);
+expect(at('if_free_quest') === 23 && at('fortress') === 39 && at('cook') === 55, `if_free_quest takes fortress's place, fortress and cook move down 16 (got ${at('if_free_quest')}, ${at('fortress')}, ${at('cook')})`);
+expect(at('hetty') === 303 && at('if_free_quest2') === 319, `if_free_quest2 sits 2 px below hetty (hetty ${at('hetty')}, if_free_quest2 ${at('if_free_quest2')})`);
+expect(at('com_43') === 338, `the MEMBERS QUESTS heading moved down 32 (306 -> ${at('com_43')})`);
+expect(at('ball') === 919 && com('questlist:ball').text === 'Witches House', `the last base entry moved down 32 (887 -> ${at('ball')})`);
+expect(at('if_quest') === 935, `if_quest (y=end+2) moved down with the list (y=${at('if_quest')}, want 935)`);
+expect(at('if_quest2') === 951, `if_quest2 (y=end+2) sits below if_quest (y=${at('if_quest2')}, want 951)`);
+expect(com('questlist:com_0').scroll === 974, `quest list scroll grew from 910 to 974 (got ${com('questlist:com_0').scroll})`);
+expect(childAt('questlist:com_0', 'questlist:if_quest')?.x === 10, 'if_quest x is 10');
 expect(com('questlist:if_quest').id === ids['questlist:if_quest'] && com('questlist:if_quest').rootLayer === questlist.id, 'if_quest has its idmap id and belongs to questlist');
 expect(com('questlist:if_quest').text === 'Fixture Quest' && com('questlist:if_quest').buttonType === Component.BUTTON, 'if_quest is a clickable text entry');
+expect(com('questlist:if_free_quest').text === 'A Fixture Quest' && com('questlist:if_free_quest2').text === 'Zany Fixture Quest', 'inserted entries have their text');
 expect(com('questlist:com_1').text === 'Quest Journal (modded)', 'patched questlist:com_1 text');
-expect(childAt('questlist:com_0', 'questlist:ball')?.y === 887 && com('questlist:ball').text === 'Witches House', 'base quest entries are unchanged');
-expect(children(com('questlist:com_0')).length === 59, 'quest list layer has the 57 base children plus 2');
+expect(children(com('questlist:com_0')).length === 61, 'quest list layer has the 57 base children plus 4');
 
 // ---- a base interface replaced by a mod
 const map = com('misthalin_map');

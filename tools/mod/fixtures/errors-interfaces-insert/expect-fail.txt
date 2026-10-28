@@ -1,0 +1,1 @@
+[mod bad_insert] interfaces/questlist.ifpatch:5: questlist:bad_entry: y=after:no_such_quest+2: questlist has no component no_such_quest

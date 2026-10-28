@@ -1,9 +1,11 @@
-// The quest's entry in the quest list (appended after the members' quests).
+// The quest's entry in the quest list: first among the free quests
+// (alphabetical order), so it takes the place of fortress (Black Knight's
+// Fortress) and the rest of the list moves down.
 [tern_quest]
 layer=com_0
 type=text
 x=10
-y=end+2
+y=before:fortress+2
 width=130
 height=14
 buttontype=normal

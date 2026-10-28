@@ -930,12 +930,20 @@ interface or another mod's interface.
   `scroll` height grows to fit it. So several mods can each add an entry to
   the same list without knowing about each other: the entries stack in load
   order.
+- `y=after:<component>+N` inserts a new component into a list, N px below
+  `<component>`. `y=before:<component>+N` inserts it where `<component>` is.
+  Every other component of the same layer at or below that point moves down
+  by the new component's height + N, and a scrolling layer's `scroll`
+  height grows by the same amount. `<component>` must be in the same layer.
+  This works only for new components. If two mods insert after the same
+  component, the later mod's entry ends up next to it.
 
 ### Adding a quest list entry
 
 The quest list is the base interface `questlist`, a side-tab overlay. Its
-entries are text components in the scrolling layer `com_0`. Add yours with a
-patch:
+entries are text components in the scrolling layer `com_0`, 14 px high and
+15 or 16 px apart, in roughly alphabetical order. Add yours with a patch,
+and insert it next to the entry that it follows alphabetically:
 
 ```
 // interfaces/questlist.ifpatch
@@ -943,7 +951,7 @@ patch:
 layer=com_0
 type=text
 x=10
-y=end+2
+y=after:imp+2
 width=130
 height=14
 buttontype=normal
@@ -953,10 +961,19 @@ text=My Quest
 colour=0xFF0000
 ```
 
-The entry lands below the last entry, in the members section. To place it
-anywhere else, patch the `y` of the existing entries. The entry is red when
-the game starts. To colour it at login and count its quest points, override
-two base procs, as shown in [Walkthrough: making a quest](#walkthrough-making-a-quest).
+- `y=after:<entry>+2` puts the entry below `<entry>`, and
+  `y=before:<entry>+2` puts it in `<entry>`'s place. The entries below it,
+  the members' heading and the members' quests move down 16 px (the
+  height 14 + 2). See [Patch files](#patch-files-ifpatch).
+- The component names are in `content/scripts/player/interfaces/questlist.if`
+  (`text=` is what the list shows). The free quests run from `fortress`
+  (Black Knight's Fortress) to `hetty` (Witch's Potion). `com_43` is the
+  MEMBERS QUESTS heading, and the members' quests follow it.
+- `y=end+2` puts the entry at the very end, after the members' quests.
+- The entry is red when the game starts. To colour it at login and count
+  its quest points, override two base procs, as shown in
+  [Walkthrough: making a quest](#walkthrough-making-a-quest).
+
 The same pattern adds a song to the music tab: see
 [Area music and the music tab](#area-music-and-the-music-tab).
 
@@ -1550,11 +1567,12 @@ op3=Ask-about-quest
 
 ```
 // interfaces/questlist.ifpatch
+// (alphabetical order: after Imp Catcher; see the section linked above)
 [myquest]
 layer=com_0
 type=text
 x=10
-y=end+2
+y=after:imp+2
 width=130
 height=14
 buttontype=normal

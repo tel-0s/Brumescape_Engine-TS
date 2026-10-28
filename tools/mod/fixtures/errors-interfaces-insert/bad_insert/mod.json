@@ -1,0 +1,6 @@
+{
+    "name": "bad_insert",
+    "version": "1.0.0",
+    "author": "fixtures",
+    "description": "Error fixture: y=after: names a component the interface does not have"
+}

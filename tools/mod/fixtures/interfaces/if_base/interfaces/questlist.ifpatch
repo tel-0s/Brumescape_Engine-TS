@@ -14,3 +14,18 @@ colour=0xFF0000
 
 [com_1]
 text=Quest Journal (modded)
+
+// Insert a free quest at the top of the free quests (alphabetical order):
+// it takes fortress's place, and everything from fortress down moves 16 px
+[if_free_quest]
+layer=com_0
+type=text
+x=10
+y=before:fortress+2
+width=120
+height=14
+buttontype=normal
+font=p12
+shadowed=yes
+text=A Fixture Quest
+colour=0xFF0000

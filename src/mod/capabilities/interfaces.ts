@@ -20,7 +20,9 @@
 // Layout helper: y=end or y=end+N puts a component N pixels below the lowest sibling (same parent
 // layer) that comes before it. If it then ends below a scrolling parent layer's scroll height, that
 // height grows to fit it (keeping the layer's bottom margin). This lets several mods append entries
-// to a list (e.g. the quest list) without knowing about each other.
+// to a list (e.g. the quest list) without knowing about each other. y=after:<com>[+N] and
+// y=before:<com>[+N] insert a new component next to a sibling instead: every sibling at or below the
+// insertion point moves down to make room, and a scrolling parent layer grows (resolveYInsert).
 //
 // Build flow (every build, afterRevalidate): resolve whole files (later mod wins), apply patches in
 // load order, register names (ModManager.registerName), validate everything mods wrote, then write
@@ -89,6 +91,7 @@ const STRINGS = ['text', 'activetext', 'option', 'actionverb', 'action'];
 const KNOWN_KEYS = new Set([...YES_NO, ...INTS, ...COLOURS, ...STRINGS, 'type', 'buttontype', 'layer', 'overlayer', 'margin', 'font', 'graphic', 'activegraphic', 'model', 'activemodel', 'anim', 'activeanim', 'actiontarget']);
 const INDEXED_KEY = /^(script[1-5]op([1-9]|1[0-9]|20)|script[1-5]|slot([1-9]|1[0-9]|20)|option[1-5])$/;
 const Y_END = /^end(\+\d+)?$/;
+const Y_INSERT = /^(after|before):([a-z0-9_]+)(\+\d+)?$/;
 
 function isKnownKey(key: string): boolean {
     return KNOWN_KEYS.has(key) || INDEXED_KEY.test(key);
@@ -234,6 +237,55 @@ function resolveYEnd(def: IfDef, com: IfComponent) {
     }
 }
 
+// y=after:<sibling>[+N] / y=before:<sibling>[+N]: insert a new component
+// into a list. after: puts it N pixels below <sibling>; before: puts it where
+// <sibling> is. Every other component of the same parent layer at or below
+// that point moves down by (height + N), and a scrolling parent layer's
+// scroll height grows by the same amount. So a mod can put a free quest among
+// the free quests, in alphabetical order, and the members' section below it
+// moves down. If two mods insert after the same component, the later one in
+// load order ends up next to it.
+function resolveYInsert(def: IfDef, com: IfComponent, created: boolean) {
+    const value = com.props.get('y');
+    const match = value === undefined ? null : Y_INSERT.exec(value);
+    if (!match) {
+        return;
+    }
+    const origin = com.origins.get('y')!;
+    const where = `${def.name}:${com.name}`;
+    if (!created) {
+        throw ModManager.error(origin.file, origin.line, `${where}: y=${value} only places a new component; give an existing component a number`);
+    }
+
+    const [, mode, targetName, gapText] = match;
+    const gap = gapText ? parseInt(gapText.substring(1), 10) : 0;
+    const parent = com.props.get('layer');
+    const target = def.byName.get(targetName);
+    if (!target || target === com) {
+        throw ModManager.error(origin.file, origin.line, `${where}: y=${value}: ${def.name} has no component ${targetName}`);
+    }
+    if (target.props.get('layer') !== parent) {
+        const inLayer = (layer: string | undefined) => (layer === undefined ? 'the interface root' : `layer ${layer}`);
+        throw ModManager.error(origin.file, origin.line, `${where}: y=${value}: ${targetName} is in ${inLayer(target.props.get('layer'))}, not in ${inLayer(parent)}`);
+    }
+
+    const y = mode === 'before' ? intProp(target, 'y') : intProp(target, 'y') + intProp(target, 'height') + gap;
+    const shift = intProp(com, 'height') + gap;
+    for (const sibling of def.components) {
+        if (sibling !== com && sibling.props.get('layer') === parent && intProp(sibling, 'y') >= y) {
+            sibling.props.set('y', String(intProp(sibling, 'y') + shift));
+        }
+    }
+    com.props.set('y', String(y));
+
+    const layer = parent !== undefined ? def.byName.get(parent) : undefined;
+    const scroll = layer ? intProp(layer, 'scroll') : 0;
+    if (layer && scroll > 0) {
+        layer.props.set('scroll', String(scroll + shift));
+        layer.touched = true;
+    }
+}
+
 // Apply one parsed mod file (a whole .if, or a .ifpatch) on top of `def`
 function applySections(def: IfDef, file: ModFile, parsed: { root: ParsedSection; sections: ParsedSection[] }, patch: boolean) {
     for (const prop of parsed.root.props) {
@@ -242,6 +294,7 @@ function applySections(def: IfDef, file: ModFile, parsed: { root: ParsedSection;
 
     for (const section of parsed.sections) {
         let com = def.byName.get(section.name);
+        const created = !com;
         if (!com) {
             com = newComponent(section.name, { file, line: section.line });
             def.components.push(com);
@@ -254,6 +307,7 @@ function applySections(def: IfDef, file: ModFile, parsed: { root: ParsedSection;
             setProp(def, com, prop.key, prop.value, { file, line: prop.line });
         }
         resolveYEnd(def, com);
+        resolveYInsert(def, com, created);
     }
 }
 
@@ -342,7 +396,7 @@ function checkComponent(def: IfDef, com: IfComponent, isRoot: boolean) {
             continue; // resolved already
         } else if (INTS.includes(key)) {
             if (!NUMBER.test(value)) {
-                throw bad('expected a number');
+                throw bad(key === 'y' ? 'expected a number, end[+N], after:<component>[+N] or before:<component>[+N]' : 'expected a number');
             }
             if (key === 'trans' && (parseInt(value) < 0 || parseInt(value) > 255)) {
                 throw bad('0 to 255');

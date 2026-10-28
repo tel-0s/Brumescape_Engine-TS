@@ -11,3 +11,18 @@ font=p12
 shadowed=yes
 text=Fixture Quest II
 colour=0xFF0000
+
+// Insert a free quest after the last free quest (hetty, Witch's Potion):
+// the members' heading and everything below it move down 16 px
+[if_free_quest2]
+layer=com_0
+type=text
+x=10
+y=after:hetty+2
+width=120
+height=14
+buttontype=normal
+font=p12
+shadowed=yes
+text=Zany Fixture Quest
+colour=0xFF0000

@@ -1,0 +1,6 @@
+[bad_entry]
+layer=com_0
+type=text
+height=14
+y=after:no_such_quest+2
+text=Bad entry

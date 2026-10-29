@@ -174,6 +174,7 @@ export function convertObj(text: string, file: string, options: ObjOptions = {})
     const vertexMap = new Map<string, number>();
     const groups = new Map<string, number>();
     const textureMappings = new Map<string, number>();
+    const mappingPoints: { label: number; P: number[]; M: number[]; N: number[]; index: number }[] = [];
     let group = '';
     let groupLine = 0;
     // resolved at the first face of a group: exporters write `o <object>`
@@ -229,6 +230,9 @@ export function convertObj(text: string, file: string, options: ObjOptions = {})
     };
 
     const toModel = (p: [number, number, number]): [number, number, number] => [Math.round(p[0] * scale), Math.round(-p[1] * scale), Math.round(-p[2] * scale)];
+    // unrounded, for texture planes: the triangles of one flat quad then agree
+    // on its plane, which rounding each vertex first would spoil
+    const toModelExact = (p: [number, number, number]): [number, number, number] => [p[0] * scale, -p[1] * scale, -p[2] * scale];
 
     const resolveIndex = (token: string, count: number, what: string, line: number): number => {
         const n = parseInt(token);
@@ -344,7 +348,7 @@ export function convertObj(text: string, file: string, options: ObjOptions = {})
 
                 // texture axes: P is texel (0,0), M is (1,0), N is (0,1), rows
                 // going down the image; OBJ v goes up the image.
-                const pos = tri.map(c => toModel(positions[c.pi]));
+                const pos = tri.map(c => toModelExact(positions[c.pi]));
                 const st = tri.map(c => [uvs[c.ti][0], 1 - uvs[c.ti][1]]);
                 const s0 = Math.floor(Math.min(st[0][0], st[1][0], st[2][0]) + 1e-6);
                 const t0 = Math.floor(Math.min(st[0][1], st[1][1], st[2][1]) + 1e-6);
@@ -368,11 +372,18 @@ export function convertObj(text: string, file: string, options: ObjOptions = {})
                 const mapKey = `${faceLabel}:${P}:${M}:${N}`;
                 let mapping = textureMappings.get(mapKey);
                 if (mapping === undefined) {
+                    // the same plane, rounded a unit apart (a quad whose corners
+                    // sit exactly between two units): reuse that mapping
+                    const near = (a: number[], b: number[]) => a.every((v, j) => Math.abs(v - b[j]) <= 1);
+                    mapping = mappingPoints.find(m => m.label === faceLabel && near(m.P, P) && near(m.M, M) && near(m.N, N))?.index;
+                }
+                if (mapping === undefined) {
                     mapping = model.texP.length;
                     textureMappings.set(mapKey, mapping);
                     model.texP.push(addVertex(P[0], P[1], P[2], faceLabel, `t${P}:${faceLabel}`));
                     model.texM.push(addVertex(M[0], M[1], M[2], faceLabel, `t${M}:${faceLabel}`));
                     model.texN.push(addVertex(N[0], N[1], N[2], faceLabel, `t${N}:${faceLabel}`));
+                    mappingPoints.push({ label: faceLabel, P, M, N, index: mapping });
                 }
                 model.faceColour.push(textureId);
                 model.faceInfo!.push((mapping << 2) | (smooth ? 2 : 3));
@@ -384,8 +395,13 @@ export function convertObj(text: string, file: string, options: ObjOptions = {})
     if (!model.faceA.length) {
         throw new ObjError('the OBJ has no faces', file, null);
     }
-    if (model.texP.length > 255) {
-        throw new ObjError(`${model.texP.length} different texture mappings (max 255): share UV layouts between faces`, file, null);
+    // a face stores its texture mapping in bits 2-7 of its info byte
+    if (model.texP.length > 64) {
+        throw new ObjError(
+            `${model.texP.length} different texture mappings (max 64): give faces in one plane one UV layout, and give quads UVs that match their shape, so both triangles share a mapping`,
+            file,
+            null
+        );
     }
     if (model.vertexX.length > 4096 || model.faceA.length > 4096) {
         throw new ObjError(`${model.vertexX.length} vertices and ${model.faceA.length} faces: the client draws at most 4096 of each per model`, file, null);

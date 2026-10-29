@@ -599,6 +599,10 @@ converted to `.ob2` at build time.
   - `map_Kd <file>` textures the face with the texture whose name is the
     file's base name (a base or mod texture). Textured faces need UVs. The
     client does not repeat a texture across one face.
+  - A model can have at most 64 texture mappings. Faces whose UVs describe
+    the same texture plane share one: both triangles of a quad do when the
+    quad's UVs match its shape (no stretching). Each flat side of a
+    textured barrel or box then needs only one.
   - `s off` gives flat shading; `s 1` gives smooth.
 - Polygons are fan-triangulated, so use convex polygons or triangulate on
   export.
@@ -1803,7 +1807,7 @@ Format limits:
 - Textures: 256 in the Brumescape client (ids 0-255, 50 used by base
   content). The build stops at id 256.
 - Models: at most 4096 vertices and 4096 faces (keep it under 2000 faces),
-  and at most 255 texture mappings. Vertex labels 0-255.
+  and at most 64 texture mappings. Vertex labels 0-255.
 - Animations: a base has at most 255 groups, a group at most 255 labels.
   Frame ids go up to 65534. No blending between frames, no vertex weights.
   The bone form cannot express alpha (fade) groups: use the base form.

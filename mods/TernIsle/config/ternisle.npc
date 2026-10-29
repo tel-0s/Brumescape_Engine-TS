@@ -51,3 +51,16 @@ model8=model_562_obj_wear
 head1=model_48_npc_head
 head2=model_82_idk_head
 wanderrange=2
+
+// An Arctic tern, modelled in Blender (models/tern.obj) and animated with
+// anims/tern.json. Terns are added by [proc,tern_flock].
+[tern]
+name=Tern
+desc=An Arctic tern, back from the far south to nest on the shingle.
+size=1
+model1=tern
+readyanim=tern_ready
+walkanim=tern_walk
+wanderrange=3
+minimap=no
+vislevel=hide

@@ -71,6 +71,9 @@ switch_int (%tern_quest) {
 inv_add(inv, tern_feather, 1);
 stat_advance(fishing, 5000);
 ~send_quest_complete(questlist:tern_quest, tern_feather, 250, ^tern_quest_questpoints, "You have completed A Tern for the Worse!");
+// TernIsle's terns come back to the shingle around Halvard
+~tern_flock;
+mes("A flock of terns wheels in over the water and settles on the shingle.");
 
 // ---------------------------------------------------------------- Gerrant
 // Overrides the base Port Sarim fishing shop owner while the player is

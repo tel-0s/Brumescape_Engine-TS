@@ -13,11 +13,12 @@
         }
     },
     "npc": {
-        "next": 1058,
+        "next": 1059,
         "ids": {
             "jemery_mclabe": 1055,
             "tern_boatman": 1056,
-            "tern_hermit": 1057
+            "tern_hermit": 1057,
+            "tern": 1058
         }
     },
     "obj": {
@@ -37,9 +38,10 @@
         }
     },
     "model": {
-        "next": 3609,
+        "next": 3610,
         "ids": {
-            "mclabe_oil_drum": 3608
+            "mclabe_oil_drum": 3608,
+            "tern": 3609
         }
     },
     "texture": {
@@ -49,7 +51,7 @@
         }
     },
     "script": {
-        "next": 8362,
+        "next": 8364,
         "ids": {
             "[opnpc1,jemery_mclabe]": 8338,
             "[oploc1,olive_oil_barrel]": 8339,
@@ -74,7 +76,9 @@
             "[label,original_opnpc1_redbeard_frank]": 8358,
             "[label,original_opheld1_spade]": 8359,
             "[proc,original_proc_update_questlist]": 8360,
-            "[proc,original_proc_count_questpoints]": 8361
+            "[proc,original_proc_count_questpoints]": 8361,
+            "[proc,tern_flock]": 8362,
+            "[debugproc,terns]": 8363
         }
     },
     "flo": {
@@ -87,6 +91,40 @@
         "next": 8144,
         "ids": {
             "questlist:tern_quest": 8143
+        }
+    },
+    "seq": {
+        "next": 1105,
+        "ids": {
+            "tern_ready": 1103,
+            "tern_walk": 1104
+        }
+    },
+    "animset": {
+        "next": 265,
+        "ids": {
+            "tern": 264
+        }
+    },
+    "frame": {
+        "next": 8189,
+        "ids": {
+            "tern_ready_1": 8173,
+            "tern_ready_2": 8174,
+            "tern_ready_3": 8175,
+            "tern_ready_4": 8176,
+            "tern_ready_5": 8177,
+            "tern_ready_6": 8178,
+            "tern_ready_7": 8179,
+            "tern_ready_8": 8180,
+            "tern_ready_9": 8181,
+            "tern_ready_10": 8182,
+            "tern_ready_11": 8183,
+            "tern_ready_12": 8184,
+            "tern_walk_1": 8185,
+            "tern_walk_2": 8186,
+            "tern_walk_3": 8187,
+            "tern_walk_4": 8188
         }
     }
 }

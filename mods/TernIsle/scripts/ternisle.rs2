@@ -54,3 +54,17 @@ if (p_finduid(uid) = true) {
     p_telejump(0_46_49_26_32);
     mes("Welcome to Tern Isle.");
 }
+
+// A small flock of terns settles on the shingle around Halvard for a few
+// minutes (500 ticks). A Tern for the Worse calls it when the quest is done.
+[proc,tern_flock]
+npc_add(0_46_49_20_39, tern, 500);
+npc_add(0_46_49_22_39, tern, 500);
+npc_add(0_46_49_24_39, tern, 500);
+npc_add(0_46_49_17_33, tern, 500);
+npc_add(0_46_49_17_31, tern, 500);
+
+// In game: ::~terns
+[debugproc,terns]
+~tern_flock;
+mes("A flock of terns settles on the shingle.");

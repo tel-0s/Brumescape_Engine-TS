@@ -1,0 +1,21 @@
+// The tern: looks around, preens, stretches its wings
+[tern_ready]
+frame1=tern_ready_1
+frame2=tern_ready_2
+frame3=tern_ready_3
+frame4=tern_ready_4
+frame5=tern_ready_5
+frame6=tern_ready_6
+frame7=tern_ready_7
+frame8=tern_ready_8
+frame9=tern_ready_9
+frame10=tern_ready_10
+frame11=tern_ready_11
+frame12=tern_ready_12
+
+// A short-legged waddle with a bobbing head
+[tern_walk]
+frame1=tern_walk_1
+frame2=tern_walk_2
+frame3=tern_walk_3
+frame4=tern_walk_4

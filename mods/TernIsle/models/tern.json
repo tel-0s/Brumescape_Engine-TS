@@ -1,0 +1,5 @@
+{
+    "comment": "Conversion options for tern.obj (made in Blender): its vertex groups are named after the bones of anims/tern.json",
+    "scale": 128,
+    "rig": "tern"
+}

@@ -1,0 +1,31 @@
+{
+    "comment": "Bone form for the tern. Pivots are in model units (128 per tile, y down, the front is -z). Signs in the client: +pitch dips the front (head nods down, tail lifts, a leg swings back), +roll raises the bird's left (+x) side, +yaw turns the head to the bird's right.",
+    "bones": [
+        { "name": "body", "label": 1 },
+        { "name": "head", "label": 2, "parent": "body", "pivot": [0, -20, -14] },
+        { "name": "wing_l", "label": 3, "parent": "body", "pivot": [5, -19, -8] },
+        { "name": "wing_r", "label": 4, "parent": "body", "pivot": [-5, -19, -8] },
+        { "name": "tail", "label": 5, "parent": "body", "pivot": [0, -18, 15] },
+        { "name": "leg_l", "label": 6, "pivot": [3, -10, 1] },
+        { "name": "leg_r", "label": 7, "pivot": [-3, -10, 1] }
+    ],
+    "delay": 6,
+    "frames": [
+        { "name": "tern_ready_1", "delay": 40 },
+        { "name": "tern_ready_2", "delay": 30, "pose": { "head": { "rotate": [0, 35, 0] } } },
+        { "name": "tern_ready_3", "delay": 15 },
+        { "name": "tern_ready_4", "delay": 30, "pose": { "head": { "rotate": [0, -35, 0] } } },
+        { "name": "tern_ready_5", "delay": 25 },
+        { "name": "tern_ready_6", "delay": 8, "pose": { "head": { "rotate": [40, 0, 0] }, "tail": { "rotate": [8, 0, 0] } } },
+        { "name": "tern_ready_7", "delay": 8, "pose": { "head": { "rotate": [55, 0, 0] }, "tail": { "rotate": [10, 0, 0] } } },
+        { "name": "tern_ready_8", "delay": 8, "pose": { "head": { "rotate": [40, 0, 0] }, "tail": { "rotate": [8, 0, 0] } } },
+        { "name": "tern_ready_9", "delay": 20 },
+        { "name": "tern_ready_10", "delay": 8, "pose": { "wing_l": { "rotate": [0, 0, 25] }, "wing_r": { "rotate": [0, 0, -25] }, "tail": { "rotate": [10, 0, 0] } } },
+        { "name": "tern_ready_11", "delay": 14, "pose": { "wing_l": { "rotate": [0, 0, 45] }, "wing_r": { "rotate": [0, 0, -45] }, "tail": { "rotate": [14, 0, 0] }, "head": { "rotate": [-15, 0, 0] } } },
+        { "name": "tern_ready_12", "delay": 8, "pose": { "wing_l": { "rotate": [0, 0, 25] }, "wing_r": { "rotate": [0, 0, -25] }, "tail": { "rotate": [10, 0, 0] } } },
+        { "name": "tern_walk_1", "delay": 4, "pose": { "leg_l": { "rotate": [-30, 0, 0] }, "leg_r": { "rotate": [30, 0, 0] }, "body": { "translate": [0, -1, 0], "rotate": [0, 0, 4] }, "head": { "translate": [0, 0, -2] } } },
+        { "name": "tern_walk_2", "delay": 4, "pose": { "head": { "translate": [0, 0, 1] } } },
+        { "name": "tern_walk_3", "delay": 4, "pose": { "leg_l": { "rotate": [30, 0, 0] }, "leg_r": { "rotate": [-30, 0, 0] }, "body": { "translate": [0, -1, 0], "rotate": [0, 0, -4] }, "head": { "translate": [0, 0, -2] } } },
+        { "name": "tern_walk_4", "delay": 4, "pose": { "head": { "translate": [0, 0, 1] } } }
+    ]
+}

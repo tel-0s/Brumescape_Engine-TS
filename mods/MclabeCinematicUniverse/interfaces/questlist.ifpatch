@@ -1,0 +1,15 @@
+// The quest list entry: among the members' quests in alphabetical order
+// ("The Brothers Mclabe" files under B, like "The Grand Tree" under G), so
+// it goes after Biohazard and the rest of the list moves down.
+[mclabe_brothers]
+layer=com_0
+type=text
+x=10
+y=after:biohazard+1
+width=130
+height=14
+buttontype=normal
+font=p12
+shadowed=yes
+text=The Brothers Mclabe
+colour=0xFF0000

@@ -1,0 +1,12 @@
+// The Brothers Mclabe (stages in mclabe.constant)
+[mclabe_brothers]
+type=int
+scope=perm
+
+[mclabe_danvid]
+type=int
+scope=perm
+
+[mclabe_bellamy]
+type=int
+scope=perm

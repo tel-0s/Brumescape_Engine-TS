@@ -1,0 +1,173 @@
+// The Brothers Mclabe: letters, journal, quest list.
+
+// ---------------------------------------------------------------- the scroll
+// The base scroll interface has 12 centred lines, scroll:com_2 to com_13.
+
+[proc,mclabe_scroll_clear]
+def_int $line = 2;
+while ($line <= 13) {
+    $line = ~mclabe_line($line, "", ^mclabe_journal_done);
+}
+
+// Sets one line and returns the next line number
+[proc,mclabe_line](int $line, string $text, int $colour)(int)
+def_component $com;
+switch_int ($line) {
+    case 2 : $com = scroll:com_2;
+    case 3 : $com = scroll:com_3;
+    case 4 : $com = scroll:com_4;
+    case 5 : $com = scroll:com_5;
+    case 6 : $com = scroll:com_6;
+    case 7 : $com = scroll:com_7;
+    case 8 : $com = scroll:com_8;
+    case 9 : $com = scroll:com_9;
+    case 10 : $com = scroll:com_10;
+    case 11 : $com = scroll:com_11;
+    case 12 : $com = scroll:com_12;
+    case 13 : $com = scroll:com_13;
+    case default : return(calc($line + 1));
+}
+if_settext($com, $text);
+if_setcolour($com, $colour);
+return(calc($line + 1));
+
+// ---------------------------------------------------------------- letters
+
+[opheld1,mclabe_letter_danvid]
+~mclabe_scroll_clear;
+def_int $l = 2;
+def_int $c = ^mclabe_journal_done;
+$l = ~mclabe_line($l, "Dear Jem,", $c);
+$l = ~mclabe_line($l, "I GOT THE JOB!!! The olive oil job!", $c);
+$l = ~mclabe_line($l, "At Creben's Fine Oils, in Brimhaven!", $c);
+$l = ~mclabe_line($l, "My DREAM JOB, Jem. My DREAM JOB.", $c);
+$l = ~mclabe_line($l, "Barrels and barrels of olive oil, all day.", $c);
+$l = ~mclabe_line($l, "I sleep right next to them. I can hear it.", $c);
+$l = ~mclabe_line($l, "Mr. Creben says I've a real nose for oil.", $c);
+$l = ~mclabe_line($l, "He's very bald and he never sits still.", $c);
+$l = ~mclabe_line($l, "He adds a secret ingredient at night.", $c);
+$l = ~mclabe_line($l, "I'm not allowed to know what it is. YET.", $c);
+$l = ~mclabe_line($l, "Your brother, oilier than ever,", $c);
+$l = ~mclabe_line($l, "Danvid", $c);
+if_openmain(scroll);
+
+[opheld1,mclabe_letter_bellamy]
+~mclabe_scroll_clear;
+def_int $l = 2;
+def_int $c = ^mclabe_journal_done;
+$l = ~mclabe_line($l, "Jem,", $c);
+$l = ~mclabe_line($l, "I have found my true calling: medicine.", $c);
+$l = ~mclabe_line($l, "There is a terrible sickness in West", $c);
+$l = ~mclabe_line($l, "Ardougne, behind the wall. The doctors", $c);
+$l = ~mclabe_line($l, "there wear masks and talk about 'germs'.", $c);
+$l = ~mclabe_line($l, "Tiny invisible animals! Utter nonsense.", $c);
+$l = ~mclabe_line($l, "I alone see the truth of it.", $c);
+$l = ~mclabe_line($l, "Do not come looking for me. A new life", $c);
+$l = ~mclabe_line($l, "needs a new name.", $c);
+$l = ~mclabe_line($l, "Burn this letter.", $c);
+$l = ~mclabe_line($l, "- B.", $c);
+if_openmain(scroll);
+
+[opheld1,mclabe_prescription]
+~mclabe_scroll_clear;
+def_int $l = 2;
+def_int $c = ^mclabe_journal_done;
+$l = ~mclabe_line($l, "PRESCRIPTION", $c);
+$l = ~mclabe_line($l, "", $c);
+$l = ~mclabe_line($l, "Ailment: miasma (bad air).", $c);
+$l = ~mclabe_line($l, "", $c);
+$l = ~mclabe_line($l, "Gargle olive oil three times a day.", $c);
+$l = ~mclabe_line($l, "Avoid foul smells. Seek out nice ones.", $c);
+$l = ~mclabe_line($l, "Open a window. Then close it again.", $c);
+$l = ~mclabe_line($l, "Under no circumstances wash your hands.", $c);
+$l = ~mclabe_line($l, "", $c);
+$l = ~mclabe_line($l, "Dr. Thrick", $c);
+if_openmain(scroll);
+
+// ---------------------------------------------------------------- journal
+
+[if_button,questlist:mclabe_brothers]
+~mclabe_scroll_clear;
+def_int $l = 2;
+def_int $todo = ^mclabe_journal_todo;
+def_int $done = ^mclabe_journal_done;
+if (%mclabe_brothers = 0) {
+    $l = ~mclabe_line($l, "I can start this quest by talking to", $todo);
+    $l = ~mclabe_line($l, "Jemery Mclabe, who is wandering in the", $todo);
+    $l = ~mclabe_line($l, "swamp south of Lumbridge.", $todo);
+    $l = ~mclabe_line($l, "", $todo);
+    $l = ~mclabe_line($l, "To complete this quest I need:", $todo);
+    // requirements are crossed off (black) once met
+    if (%elenaquest >= ^mclabe_plague_city_done) {
+        $l = ~mclabe_line($l, "Plague City", $done);
+    } else {
+        $l = ~mclabe_line($l, "Plague City", $todo);
+    }
+    if_openmain(scroll);
+    return;
+}
+$l = ~mclabe_line($l, "Jemery Mclabe asked me to find out what", $done);
+$l = ~mclabe_line($l, "became of his brothers, Danvid and Bellamy.", $done);
+$l = ~mclabe_line($l, "", $done);
+switch_int (%mclabe_danvid) {
+    case 0 :
+        $l = ~mclabe_line($l, "Danvid wrote from Creben's Fine Oils, in", $todo);
+        $l = ~mclabe_line($l, "Brimhaven. I should look for him there.", $todo);
+    case ^mclabe_danvid_mags :
+        $l = ~mclabe_line($l, "Mags, his bunkmate, says he vanished one", $todo);
+        $l = ~mclabe_line($l, "night by the big barrel. I should search it.", $todo);
+    case default :
+        $l = ~mclabe_line($l, "Danvid fell into a barrel of olive oil", $done);
+        $l = ~mclabe_line($l, "and drowned.", $done);
+}
+$l = ~mclabe_line($l, "", $done);
+switch_int (%mclabe_bellamy) {
+    case 0 :
+        $l = ~mclabe_line($l, "Bellamy became a doctor in West Ardougne.", $todo);
+        $l = ~mclabe_line($l, "I should look for him there.", $todo);
+    case ^mclabe_bellamy_heard :
+        $l = ~mclabe_line($l, "Nurse Sarah told me about a Dr. Thrick, in", $todo);
+        $l = ~mclabe_line($l, "the north-west of the city.", $todo);
+    case ^mclabe_bellamy_prescription :
+        $l = ~mclabe_line($l, "The handwriting on Dr. Thrick's", $todo);
+        $l = ~mclabe_line($l, "prescription looks familiar...", $todo);
+    case ^mclabe_bellamy_matched :
+        $l = ~mclabe_line($l, "It matches Bellamy's letter! I should", $todo);
+        $l = ~mclabe_line($l, "confront Dr. Thrick.", $todo);
+    case default :
+        $l = ~mclabe_line($l, "Dr. Thrick is Bellamy. He wrote", $done);
+        $l = ~mclabe_line($l, "Jemery a note.", $done);
+}
+$l = ~mclabe_line($l, "", $done);
+if (%mclabe_brothers = ^mclabe_brothers_complete) {
+    $l = ~mclabe_line($l, "QUEST COMPLETE!", $done);
+    $l = ~mclabe_line($l, "But who is Jimley Creben?", $done);
+} else if (%mclabe_danvid >= ^mclabe_danvid_drowned & %mclabe_bellamy >= ^mclabe_bellamy_confessed) {
+    $l = ~mclabe_line($l, "I should tell Jemery what I found.", $todo);
+}
+if_openmain(scroll);
+
+// ---------------------------------------------------------------- quest list
+// Base procs that list every quest by hand. Each override calls the version
+// it replaced, so other quest mods can do the same.
+[proc,update_questlist]
+~original_proc_update_questlist;
+~send_quest_progress_colour(questlist:mclabe_brothers, %mclabe_brothers, ^mclabe_brothers_complete);
+
+[proc,count_questpoints]()(int)
+def_int $points = ~original_proc_count_questpoints;
+if (%mclabe_brothers = ^mclabe_brothers_complete) {
+    $points = add($points, ^mclabe_brothers_questpoints);
+}
+return($points);
+
+// ---------------------------------------------------------------- testing
+// ::~mclabe_stage <quest> <danvid> <bellamy> (debugprocs need p_finduid for
+// protected access)
+[debugproc,mclabe_stage](int $quest, int $danvid, int $bellamy)
+if (p_finduid(uid) = true) {
+    %mclabe_brothers = $quest;
+    %mclabe_danvid = $danvid;
+    %mclabe_bellamy = $bellamy;
+    ~send_quest_progress(questlist:mclabe_brothers, %mclabe_brothers, ^mclabe_brothers_complete);
+}

@@ -6,42 +6,54 @@
         }
     },
     "loc": {
-        "next": 3552,
+        "next": 3553,
         "ids": {
             "olive_oil_barrel": 3550,
-            "tern_shingle_mound": 3551
+            "tern_shingle_mound": 3551,
+            "mclabe_oil_crate": 3552
         }
     },
     "npc": {
-        "next": 1059,
+        "next": 1061,
         "ids": {
             "jemery_mclabe": 1055,
             "tern_boatman": 1056,
             "tern_hermit": 1057,
-            "tern": 1058
+            "tern": 1058,
+            "mclabe_mags": 1059,
+            "dr_thrick": 1060
         }
     },
     "obj": {
-        "next": 2982,
+        "next": 2986,
         "ids": {
             "danvids_olive_oil": 2978,
             "tern_gull_call": 2979,
             "tern_rum": 2980,
-            "tern_feather": 2981
+            "tern_feather": 2981,
+            "mclabe_letter_danvid": 2982,
+            "mclabe_letter_bellamy": 2983,
+            "mclabe_prescription": 2984,
+            "mclabe_note_for_jemery": 2985
         }
     },
     "varp": {
-        "next": 311,
+        "next": 314,
         "ids": {
             "mclabe_grief_stage": 309,
-            "tern_quest": 310
+            "tern_quest": 310,
+            "mclabe_brothers": 311,
+            "mclabe_danvid": 312,
+            "mclabe_bellamy": 313
         }
     },
     "model": {
-        "next": 3610,
+        "next": 3612,
         "ids": {
             "mclabe_oil_drum": 3608,
-            "tern": 3609
+            "tern": 3609,
+            "mclabe_oil_barrel": 3610,
+            "mclabe_oil_bottle": 3611
         }
     },
     "texture": {
@@ -51,7 +63,7 @@
         }
     },
     "script": {
-        "next": 8364,
+        "next": 8388,
         "ids": {
             "[opnpc1,jemery_mclabe]": 8338,
             "[oploc1,olive_oil_barrel]": 8339,
@@ -78,7 +90,31 @@
             "[proc,original_proc_update_questlist]": 8360,
             "[proc,original_proc_count_questpoints]": 8361,
             "[proc,tern_flock]": 8362,
-            "[debugproc,terns]": 8363
+            "[debugproc,terns]": 8363,
+            "[opnpc1,dr_thrick]": 8364,
+            "[label,mclabe_thrick_confront]": 8365,
+            "[label,mclabe_thrick_after]": 8366,
+            "[opheldu,mclabe_prescription]": 8367,
+            "[oploc1,mclabe_oil_crate]": 8368,
+            "[opnpc1,mclabe_mags]": 8369,
+            "[label,mclabe_mags_danvid]": 8370,
+            "[label,mclabe_fill_bottle]": 8371,
+            "[label,mclabe_jemery_start]": 8372,
+            "[label,mclabe_jemery_progress]": 8373,
+            "[label,mclabe_jemery_finale]": 8374,
+            "[queue,mclabe_brothers_complete]": 8375,
+            "[label,mclabe_jemery_after]": 8376,
+            "[ai_timer,jemery_mclabe]": 8377,
+            "[proc,mclabe_scroll_clear]": 8378,
+            "[proc,mclabe_line]": 8379,
+            "[opheld1,mclabe_letter_danvid]": 8380,
+            "[opheld1,mclabe_letter_bellamy]": 8381,
+            "[opheld1,mclabe_prescription]": 8382,
+            "[if_button,questlist:mclabe_brothers]": 8383,
+            "[debugproc,mclabe_stage]": 8384,
+            "[label,original_opnpc1_bionurse]": 8385,
+            "[proc,original1_proc_update_questlist]": 8386,
+            "[proc,original1_proc_count_questpoints]": 8387
         }
     },
     "flo": {
@@ -88,9 +124,10 @@
         }
     },
     "interface": {
-        "next": 8144,
+        "next": 8145,
         "ids": {
-            "questlist:tern_quest": 8143
+            "questlist:tern_quest": 8143,
+            "questlist:mclabe_brothers": 8144
         }
     },
     "seq": {

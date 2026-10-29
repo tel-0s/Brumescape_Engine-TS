@@ -1,0 +1,133 @@
+// The Brothers Mclabe: Bellamy's thread, in West Ardougne (needs Plague City).
+// Nurse Sarah points the way; Dr. Thrick's clinic is a rat-infested house in
+// the north-west of the city (maps/m38_51.patch.jm2).
+
+// Overrides base Nurse Sarah while the player is looking for Bellamy. Her
+// Biohazard dialogue, and everything else, is the original.
+[opnpc1,bionurse]
+if (%mclabe_brothers ! ^mclabe_brothers_started | %mclabe_bellamy >= ^mclabe_bellamy_prescription | %biohazard = ^biohazard_poisoned_stew | %biohazard = ^biohazard_climbed_ladder) {
+    @original_opnpc1_bionurse;
+}
+~chatplayer("<p,quiz>Hello nurse. Is there a new doctor in this part of the city?");
+~chatnpc("<p,angry>A doctor? You mean Dr. Thrick? That man is a menace!");
+~chatnpc("<p,angry>He says the plague is caused by bad smells, and he tells people to gargle olive oil. He won't even wear a mask!");
+~chatnpc("<p,confused>Mind you, none of his patients have died. None of anyone's have, come to think of it.");
+~chatnpc("<p,neutral>His 'clinic' is a house in the north-west of the city, with broken shutters and a lot of rats. Don't let him treat you.");
+if (%mclabe_bellamy = 0) {
+    %mclabe_bellamy = ^mclabe_bellamy_heard;
+}
+
+[opnpc1,dr_thrick]
+if (%mclabe_brothers = ^mclabe_brothers_started & %mclabe_bellamy = ^mclabe_bellamy_matched) {
+    @mclabe_thrick_confront;
+}
+if (%mclabe_bellamy >= ^mclabe_bellamy_confessed) {
+    @mclabe_thrick_after;
+}
+~chatnpc("<p,happy>Ah, a visitor! Come in, come in. Mind the rats. They're perfectly harmless. Rats never hurt anyone.");
+if (%mclabe_bellamy < ^mclabe_bellamy_prescription) {
+    ~chatplayer("<p,quiz>Are you Dr. Thrick?");
+    ~chatnpc("<p,neutral>The very same. Physician, philosopher, and the only man in this city who understands the plague.");
+    ~chatnpc("<p,angry>Those masked fools out there will tell you it spreads by 'germs'. Tiny invisible animals! Have you ever seen a germ? No. Because there's no such thing.");
+    ~chatnpc("<p,shifty>No. The plague is miasma: bad air. Foul smells. Fix the smell, and you fix the patient.");
+    ~chatnpc("<p,happy>And it works! Not one of my patients has died of the plague. Not ONE.");
+}
+def_int $option;
+if (%mclabe_brothers = ^mclabe_brothers_started) {
+    $option = ~p_choice3("What do you prescribe?", 1, "Do you know a man called Bellamy Mclabe?", 2, "Goodbye.", 3);
+} else {
+    $option = ~p_choice2("What do you prescribe?", 1, "Goodbye.", 3);
+}
+switch_int ($option) {
+    case 1 :
+        ~chatplayer("<p,quiz>What do you prescribe?");
+        ~chatnpc("<p,happy>Olive oil! Gargled, three times a day. It coats the throat against the miasma.");
+        if (inv_total(inv, mclabe_prescription) = 0) {
+            if (inv_freespace(inv) = 0) {
+                ~chatnpc("<p,neutral>I'd write it down for you, but your pockets are full. Very unhygienic. Come back when you've made room.");
+                return;
+            }
+            inv_add(inv, mclabe_prescription, 1);
+            ~objbox(mclabe_prescription, "Dr. Thrick scribbles you a prescription.", 250, 0, 0);
+        }
+        if (%mclabe_brothers = ^mclabe_brothers_started & %mclabe_bellamy < ^mclabe_bellamy_prescription) {
+            %mclabe_bellamy = ^mclabe_bellamy_prescription;
+        }
+    case 2 :
+        ~chatplayer("<p,quiz>Do you know a man called Bellamy Mclabe?");
+        ~chatnpc("<p,shifty>Bellamy? Never heard of him. Lovely name, though. Very... medical.");
+    case 3 :
+        ~chatplayer("<p,neutral>Goodbye.");
+        ~chatnpc("<p,happy>Breathe through your nose!");
+}
+
+[label,mclabe_thrick_confront]
+~chatplayer("<p,neutral>I know who you are, Bellamy.");
+~chatnpc("<p,shock>Shh! Keep your voice down!");
+~chatnpc("<p,sad>How did you...? The handwriting. Of course. I always did put too many curls on my capitals.");
+~chatplayer("<p,neutral>Jemery is looking for you. He's lost in Lumbridge Swamp.");
+~chatnpc("<p,sad>Of course he is. Dear old Jem.");
+~chatnpc("<p,neutral>Listen to me. Bellamy Mclabe is dead. There is only Dr. Thrick now, and these people need him.");
+if (%mclabe_danvid >= ^mclabe_danvid_drowned) {
+    ~chatplayer("<p,sad>There's more. Danvid is dead. He drowned in a barrel of olive oil, in Brimhaven.");
+    ~chatnpc("<p,shock>Danvid? In olive oil?");
+    ~chatnpc("<p,sad>...He loved that stuff more than he loved most people.");
+    ~chatnpc("<p,shifty>Brimhaven, you say. My oil comes from Brimhaven.");
+} else {
+    ~chatnpc("<p,quiz>And Danvid? Have you found Danvid?");
+    ~chatplayer("<p,neutral>Not yet.");
+    ~chatnpc("<p,sad>Find him. He was always the one who got himself into trouble.");
+}
+def_int $option = ~p_choice2("Who is Jimley Creben?", 1, "Will you come home?", 2);
+if ($option = 1) {
+    ~chatplayer("<p,quiz>Who is Jimley Creben?");
+    ~chatnpc("<p,scared>Who? No one. I've never heard of him. I don't know any Crebens. Why would I know any Crebens?");
+    ~chatnpc("<p,shifty>Please. I have patients.");
+} else {
+    ~chatplayer("<p,quiz>Will you come home?");
+    ~chatnpc("<p,sad>No. But I'll write to him.");
+}
+if (inv_freespace(inv) = 0) {
+    ~chatnpc("<p,neutral>I'd write Jem a note, but you've no room for it. Come back when you have.");
+    return;
+}
+inv_add(inv, mclabe_note_for_jemery, 1);
+%mclabe_bellamy = ^mclabe_bellamy_confessed;
+~send_quest_progress(questlist:mclabe_brothers, %mclabe_brothers, ^mclabe_brothers_complete);
+~objbox(mclabe_note_for_jemery, "Dr. Thrick scribbles a note and seals it.", 250, 0, 0);
+~chatnpc("<p,neutral>Give that to Jem. And don't tell anyone else who I am.");
+
+[label,mclabe_thrick_after]
+if (%mclabe_brothers = ^mclabe_brothers_complete) {
+    ~chatnpc("<p,shifty>Ah, my favourite patient. Olive oil, three times a day. And not a word about... you know.");
+    return;
+}
+if (inv_total(inv, mclabe_note_for_jemery) = 0 & inv_freespace(inv) > 0) {
+    ~chatnpc("<p,confused>Lost my note already? Here. Try not to breathe on it.");
+    inv_add(inv, mclabe_note_for_jemery, 1);
+    return;
+}
+~chatnpc("<p,neutral>Give Jem my note. And tell no one who I am.");
+
+// Comparing the handwriting (the engine also runs this for the letter used on
+// the prescription, with the two swapped)
+[opheldu,mclabe_prescription]
+if (last_useitem ! mclabe_letter_bellamy) {
+    ~displaymessage(^dm_default);
+    return;
+}
+if (%mclabe_brothers = ^mclabe_brothers_started & %mclabe_bellamy = ^mclabe_bellamy_prescription) {
+    ~mesbox("You hold Dr. Thrick's prescription next to Bellamy's letter.");
+    ~mesbox("The same neat, sharp handwriting. The same odd little curl on every capital letter.");
+    ~chatplayer("<p,shock>Dr. Thrick is Bellamy Mclabe!");
+    %mclabe_bellamy = ^mclabe_bellamy_matched;
+    return;
+}
+if (%mclabe_bellamy >= ^mclabe_bellamy_matched) {
+    mes("The same neat, sharp handwriting. Dr. Thrick is Bellamy.");
+    return;
+}
+~displaymessage(^dm_default);
+
+[oploc1,mclabe_oil_crate]
+mes("The crate is full of bottles of olive oil, stamped: CREBEN'S FINE OILS - BRIMHAVEN.");

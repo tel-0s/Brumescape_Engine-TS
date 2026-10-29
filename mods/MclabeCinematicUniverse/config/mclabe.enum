@@ -1,0 +1,10 @@
+// Things Jemery says to himself in the swamp ([ai_timer,jemery_mclabe])
+[mclabe_quotes]
+inputtype=int
+outputtype=string
+val=0,Danvid? Bellamy? Hello?
+val=1,I'm sure they were around here somewhere.
+val=2,This swamp is very... swampy.
+val=3,Mum always said: stick together, boys.
+val=4,That rat looked at me funny.
+val=5,Is this the way to Lumbridge? Was it ever?

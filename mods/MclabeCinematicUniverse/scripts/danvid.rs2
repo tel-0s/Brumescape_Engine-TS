@@ -1,0 +1,72 @@
+// The Brothers Mclabe: Danvid's thread, in Brimhaven.
+// The bunkhouse of Creben's Fine Oils at the docks (maps/m43_50.patch.jm2):
+// Mags, Danvid's bunkmate, and the big barrel he drowned in.
+
+[opnpc1,mclabe_mags]
+if (%mclabe_brothers = ^mclabe_brothers_started & %mclabe_danvid = 0) {
+    @mclabe_mags_danvid;
+}
+if (%mclabe_danvid >= ^mclabe_danvid_drowned) {
+    ~chatnpc("<p,sad>So that's what happened to him. Drowned in the thing he loved most.");
+    ~chatnpc("<p,neutral>Nobody's going to buy that barrel now. Take some of the oil for his family, if you like. There are bottles by it.");
+    return;
+}
+if (%mclabe_danvid = ^mclabe_danvid_mags) {
+    ~chatnpc("<p,sad>The big barrel's by the north wall. Have a look if you want. I can't bring myself to.");
+    return;
+}
+~chatnpc("<p,neutral>Oi. This is the bunkhouse for Creben's Fine Oils. Dock hands only.");
+~chatplayer("<p,quiz>Creben's Fine Oils?");
+~chatnpc("<p,shifty>The boss imports olive oil. Or he did. He's not been round in months. Neither's our wages.");
+
+[label,mclabe_mags_danvid]
+~chatplayer("<p,neutral>I'm looking for Danvid Mclabe. His brother sent me.");
+~chatnpc("<p,sad>Danvid... You'd better come in. That was his bunk, by the window.");
+~chatnpc("<p,neutral>Nicest lad I ever worked with. Strange, mind. He loved the oil. I mean LOVED it. Sniffed the barrels. Talked to them.");
+~chatnpc("<p,confused>Said the oil talked back.");
+~chatnpc("<p,sad>One night he went to check on the big barrel, same as every night. In the morning he was gone. Just his boots, by the barrel.");
+~chatplayer("<p,quiz>Did anyone look for him?");
+~chatnpc("<p,shifty>Mister Creben said Danvid must have gone home to his family. Then Mister Creben went too. Didn't even collect the takings.");
+%mclabe_danvid = ^mclabe_danvid_mags;
+def_int $option = ~p_choice2("What's Mister Creben like?", 1, "I'll take a look at that barrel.", 2);
+if ($option = 1) {
+    ~chatplayer("<p,quiz>What's Mister Creben like?");
+    ~chatnpc("<p,shifty>Jimley Creben. Bald as an egg, and never sat still. Came round at night with his 'secret ingredient' for the barrels. Nobody else was allowed near.");
+    ~chatnpc("<p,neutral>Good wages, though. When he paid them.");
+} else {
+    ~chatplayer("<p,neutral>I'll take a look at that barrel.");
+}
+~chatnpc("<p,sad>The big barrel's by the north wall. I can't bring myself to look.");
+
+[oploc1,olive_oil_barrel]
+if (%mclabe_brothers = ^mclabe_brothers_started & %mclabe_danvid = ^mclabe_danvid_mags) {
+    ~mesbox("You peer into the barrel. The oil is strangely warm, and it shimmers faintly.");
+    ~mesbox("Something is caught on the rim: a flat cap, soaked through. Stitched inside, in wobbly letters: D. MCLABE.");
+    ~mesbox("There are long scratch marks inside the rim, as if someone tried very hard to climb out.");
+    ~chatplayer("<p,sad>Oh, Danvid. He must have fallen in, and drowned.");
+    %mclabe_danvid = ^mclabe_danvid_drowned;
+    @mclabe_fill_bottle;
+}
+if (%mclabe_danvid >= ^mclabe_danvid_drowned) {
+    if (inv_total(inv, danvids_olive_oil) = 0) {
+        @mclabe_fill_bottle;
+    }
+    mes("The oil shimmers faintly. You try not to look at it too closely.");
+    return;
+}
+mes("The barrel is brimming with olive oil. It smells wonderful, and slightly wrong.");
+
+[label,mclabe_fill_bottle]
+if (inv_freespace(inv) = 0) {
+    mes("There are empty bottles by the barrel, but you have no room to take one.");
+    return;
+}
+inv_add(inv, danvids_olive_oil, 1);
+~objbox(danvids_olive_oil, "Empty bottles stamped CREBEN'S FINE OILS are stacked by the barrel. You fill one with the oil, for Jemery.", 250, 0, 0);
+
+[opheld1,danvids_olive_oil]
+switch_int (random(3)) {
+    case 0 : mes("You mourn Danvid Mclabe. He was thirty-four.");
+    case 1 : mes("You hold the bottle up to the light. The oil swirls, though you are holding it still.");
+    case default : mes("You mourn Danvid. Somewhere, a barrel of olive oil is a little emptier.");
+}

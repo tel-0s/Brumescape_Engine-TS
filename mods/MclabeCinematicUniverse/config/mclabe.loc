@@ -1,0 +1,14 @@
+// The big barrel in the Creben's Fine Oils bunkhouse, Brimhaven docks
+// (models/mclabe_oil_barrel.obj, staves textured with mclabe_oil_texture)
+[olive_oil_barrel]
+name=Barrel of olive oil
+desc=Brimming with olive oil. It smells wonderful, and slightly wrong.
+model=mclabe_oil_barrel
+op1=Search
+
+// In Dr. Thrick's clinic, West Ardougne (the base crate model)
+[mclabe_oil_crate]
+name=Crate
+desc=Stamped: CREBEN'S FINE OILS - BRIMHAVEN.
+model=model_loc_63
+op1=Search

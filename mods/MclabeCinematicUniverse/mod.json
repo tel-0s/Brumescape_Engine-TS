@@ -1,7 +1,7 @@
 {
-  "name": "MclabeCinematicUniverse",
-  "description": "Adds characters from the Jemery Mclabe Cinematic Universe",
-  "version": "1.0.0",
-  "author": "tel0s",
-  "dependencies": {}
+    "name": "MclabeCinematicUniverse",
+    "description": "The Mclabe Cinematic Universe: The Brothers Mclabe, a quest about three brothers, a barrel of olive oil and a doctor who does not believe in germs",
+    "version": "2.0.0",
+    "author": "tel0s",
+    "dependencies": {}
 }

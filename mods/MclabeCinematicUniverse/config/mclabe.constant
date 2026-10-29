@@ -1,0 +1,18 @@
+// The Brothers Mclabe
+// %mclabe_brothers: the quest
+^mclabe_brothers_started = 1
+^mclabe_brothers_complete = 2
+^mclabe_brothers_questpoints = 2
+// %mclabe_danvid: what the player knows about Danvid
+^mclabe_danvid_mags = 1
+^mclabe_danvid_drowned = 2
+// %mclabe_bellamy: what the player knows about Bellamy
+^mclabe_bellamy_heard = 1
+^mclabe_bellamy_prescription = 2
+^mclabe_bellamy_matched = 3
+^mclabe_bellamy_confessed = 4
+// Plague City (base content): West Ardougne opens at this stage of %elenaquest
+^mclabe_plague_city_done = 29
+// Journal line colours
+^mclabe_journal_todo = 0x000080
+^mclabe_journal_done = 0x000000

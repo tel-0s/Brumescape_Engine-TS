@@ -1,0 +1,78 @@
+// Jemery Mclabe: wanders Lumbridge Swamp looking for his brothers.
+[jemery_mclabe]
+name=Jemery Mclabe
+desc=An earnest man. He seems a little lost.
+model1=model_215_idk
+model2=model_185_obj_wear
+model3=model_249_idk
+model4=model_310_idk
+model5=model_173_npc
+model6=model_176_idk
+model7=model_275_idk
+head1=model_53_idk_head
+head2=model_81_idk_head
+walkanim=human_walk_f,human_walk_b,human_walk_l,human_walk_r
+readyanim=human_ready
+op1=Talk-to
+wanderrange=5
+// every 50 ticks (30 s) he may mutter to himself
+timer=50
+vislevel=hide
+
+// Mags: Danvid's bunkmate at Creben's Fine Oils, Brimhaven docks.
+[mclabe_mags]
+name=Mags
+desc=A Brimhaven dock hand. Her arms are bigger than yours.
+model1=model_391_idk
+model2=model_471_idk
+model3=model_332_idk
+model4=model_353_idk
+model5=model_419_idk
+model6=model_358_idk
+model7=model_414_npc
+head1=model_114_idk_head
+head2=model_131_npc_head
+recol1s=2340
+recol1d=4226
+recol2s=14724
+recol2d=6798
+recol3s=14801
+recol3d=24075
+recol4s=6273
+recol4d=4226
+walkanim=human_walk_f,human_walk_b,human_walk_l,human_walk_r
+readyanim=human_ready
+op1=Talk-to
+wanderrange=2
+moverestrict=indoors
+vislevel=hide
+
+// Dr. Thrick: Bellamy Mclabe under another name. The apothecary's look in
+// dark colours; the same hair and face as Jemery.
+[dr_thrick]
+name=Dr. Thrick
+desc=A doctor. He isn't wearing a mask.
+model1=model_215_idk
+model2=model_181_idk
+model3=model_246_idk
+model4=model_299_npc
+model5=model_159_npc
+model6=model_176_idk
+model7=model_254_idk
+model8=model_198_obj_wear
+model9=model_245_npc
+head1=model_53_idk_head
+head2=model_40_obj_wear
+head3=model_78_npc_head
+recol1s=12677
+recol1d=4
+recol2s=14724
+recol2d=8
+recol3s=14801
+recol3d=24075
+walkanim=human_walk_f,human_walk_b,human_walk_l,human_walk_r
+readyanim=human_ready
+op1=Talk-to
+wanderrange=1
+moverestrict=indoors
+vislevel=hide

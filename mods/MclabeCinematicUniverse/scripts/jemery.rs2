@@ -1,0 +1,97 @@
+// The Brothers Mclabe: Jemery Mclabe, in Lumbridge Swamp.
+// Stages: config/mclabe.constant. Lore: ROADMAP.md.
+
+[opnpc1,jemery_mclabe]
+switch_int (%mclabe_brothers) {
+    case 0 : @mclabe_jemery_start;
+    case ^mclabe_brothers_started : @mclabe_jemery_progress;
+    case default : @mclabe_jemery_after;
+}
+
+[label,mclabe_jemery_start]
+~chatnpc("<p,happy>Oh! Hello! You haven't seen my brothers, have you? Danvid and Bellamy. Mclabes, like me. I'm Jemery.");
+~chatplayer("<p,quiz>Are they lost?");
+~chatnpc("<p,confused>I think so. Or maybe I am. I came out here to look for them, and now I can't find the way back either.");
+~chatnpc("<p,sad>Danvid stopped writing in the spring. Bellamy stopped writing before that. Mum would know what to do, but she isn't around any more.");
+def_int $option = ~p_choice2("I'll find out what happened to them.", 1, "Sorry, I can't help.", 2);
+if ($option = 2) {
+    ~chatplayer("<p,neutral>Sorry, I can't help.");
+    ~chatnpc("<p,sad>That's alright. I'll keep looking. They have to be somewhere. Everything is somewhere.");
+    return;
+}
+~chatplayer("<p,happy>I'll find out what happened to them.");
+if (inv_freespace(inv) < 2) {
+    ~chatnpc("<p,neutral>You'll need room for their letters. Two spaces, please. I counted.");
+    return;
+}
+~chatnpc("<p,happy>Would you? Thank you! Here are their last letters. I've read them lots of times, but I don't understand them any better.");
+inv_add(inv, mclabe_letter_danvid, 1);
+inv_add(inv, mclabe_letter_bellamy, 1);
+%mclabe_brothers = ^mclabe_brothers_started;
+~send_quest_progress(questlist:mclabe_brothers, %mclabe_brothers, ^mclabe_brothers_complete);
+~objbox(mclabe_letter_danvid, "Jemery hands you two crumpled letters.", 250, 0, 0);
+~chatnpc("<p,neutral>Danvid got a job somewhere. Bellamy went to be a doctor somewhere. Somewhere is a very big place, isn't it?");
+
+[label,mclabe_jemery_progress]
+if (%mclabe_danvid >= ^mclabe_danvid_drowned & %mclabe_bellamy >= ^mclabe_bellamy_confessed) {
+    if (inv_total(inv, danvids_olive_oil) > 0 & inv_total(inv, mclabe_note_for_jemery) > 0) {
+        @mclabe_jemery_finale;
+    }
+    ~chatnpc("<p,quiz>Any news of my brothers?");
+    ~chatplayer("<p,neutral>I know what happened to them now. But I should bring back what I found first.");
+    ~chatnpc("<p,happy>Alright. I'll wait here. I'm good at waiting. And at being here.");
+    return;
+}
+~chatnpc("<p,quiz>Any news of my brothers?");
+~chatplayer("<p,neutral>Not yet. I'm still looking.");
+// lost letters: Jemery copied them out
+if ((inv_total(inv, mclabe_letter_danvid) = 0 | inv_total(inv, mclabe_letter_bellamy) = 0) & inv_freespace(inv) > 0) {
+    ~chatnpc("<p,happy>Did you lose their letters? That's alright, I copied them out. Twice.");
+    if (inv_total(inv, mclabe_letter_danvid) = 0) {
+        inv_add(inv, mclabe_letter_danvid, 1);
+    }
+    if (inv_total(inv, mclabe_letter_bellamy) = 0 & inv_freespace(inv) > 0) {
+        inv_add(inv, mclabe_letter_bellamy, 1);
+    }
+}
+if (%mclabe_danvid = 0) {
+    ~chatnpc("<p,confused>Danvid's letter says Brimhaven. I don't know where that is. Is it near here? Is anything near here?");
+}
+if (%mclabe_bellamy < ^mclabe_bellamy_confessed) {
+    ~chatnpc("<p,confused>Bellamy's letter says West Ardougne. Behind a wall, he says. Why would anyone live behind a wall?");
+}
+
+[label,mclabe_jemery_finale]
+~chatplayer("<p,neutral>I found out what happened to your brothers.");
+~chatnpc("<p,quiz>You did? Both of them? Where are they? Are they coming?");
+~chatplayer("<p,sad>I'm sorry, Jemery. Danvid drowned. In a barrel of olive oil, at the docks in Brimhaven.");
+~chatnpc("<p,shock>Drowned? In olive oil?");
+~chatnpc("<p,sad>...He did love it. He always said he wanted to swim in it one day.");
+~chatnpc("<p,sad>He was only thirty-four.");
+~chatplayer("<p,sad>I brought you some of the oil.");
+~chatnpc("<p,confused>That's very thoughtful. And very strange.");
+~chatnpc("<p,sad>You keep it. I'd only cry on it. Mourn him for me sometimes.");
+~chatplayer("<p,happy>But Bellamy's alive. He's in West Ardougne, calling himself Dr. Thrick.");
+~chatnpc("<p,happy>A doctor! Bellamy's a real doctor! Mum would be so proud.");
+~chatnpc("<p,confused>Why is he calling himself Dr. Thrick?");
+~chatplayer("<p,shifty>It's... complicated. He wrote you a note.");
+inv_del(inv, mclabe_note_for_jemery, 1);
+~mesbox("You hand Jemery the note. He reads it slowly, moving his lips.");
+~chatnpc("<p,neutral>'Jem. I am alive. I am a doctor now. Do not come. Avoid bad smells. - B.'");
+~chatnpc("<p,happy>He always did know best.");
+queue(mclabe_brothers_complete, 0);
+
+[queue,mclabe_brothers_complete]
+%mclabe_brothers = ^mclabe_brothers_complete;
+stat_advance(herblore, 15000);
+~send_quest_complete(questlist:mclabe_brothers, danvids_olive_oil, 250, ^mclabe_brothers_questpoints, "You have completed The Brothers Mclabe!");
+
+[label,mclabe_jemery_after]
+~chatnpc("<p,happy>Hello again! I'm going to stay out here a while. It's peaceful. Mostly.");
+~chatnpc("<p,sad>I keep thinking about Danvid. And olives. Mostly Danvid.");
+
+// He mutters to himself as he wanders (npc timer=50 in config/mclabe.npc)
+[ai_timer,jemery_mclabe]
+if (random(3) = 0) {
+    npc_say(enum(int, string, mclabe_quotes, random(6)));
+}

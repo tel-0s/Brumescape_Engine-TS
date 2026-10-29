@@ -1,0 +1,8 @@
+// Brimhaven docks: the bunkhouse of Creben's Fine Oils, where Danvid lived
+// and worked. His barrel replaces the base barrel by the north wall, and his
+// bunkmate Mags is inside.
+==== LOC ====
+-0 32 6: barrel
+0 32 6: olive_oil_barrel 10 0
+==== NPC ====
+0 30 4: mclabe_mags

@@ -1,0 +1,7 @@
+// West Ardougne: Dr. Thrick's clinic, a rat-infested house with broken
+// shutters. A crate of Creben's olive oil replaces the base boxes.
+==== LOC ====
+-0 49 41: boxes3
+0 49 41: mclabe_oil_crate 10 0
+==== NPC ====
+0 49 42: dr_thrick

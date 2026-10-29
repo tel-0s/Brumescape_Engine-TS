@@ -9,7 +9,8 @@
 //     music/theme.mid
 //   - any other file gets a warning, for example config/quest.const or
 //     models/rock.png
-// Not reported: mod.json, spawns.json, notes (*.md, *.txt, LICENSE, ...), and
+// Not reported: mod.json, spawns.json, notes (*.md, *.txt, LICENSE, ...), the
+// source/ folder (the author's own sources, such as Blender files), and
 // the side files that capabilities read next to a listed file: meta/<name>.opt
 // and meta/<name>.pal.png of sprites, textures and title sprites, and the
 // .mtl files and <name>.json options of OBJ models.
@@ -50,6 +51,11 @@ function isSideFile(rel: string, file: string): boolean {
         return true;
     }
     if (ext === '.md' || ext === '.txt' || NOTE_NAMES.test(base)) {
+        return true;
+    }
+    // source/: the author's own sources (Blender files and scripts, image
+    // layers, ...) that the build does not read
+    if (parts[0] === 'source') {
         return true;
     }
     // meta/<name>.opt, meta/<name>.pal.png next to a sprite, texture or title sprite

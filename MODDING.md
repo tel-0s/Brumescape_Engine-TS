@@ -132,6 +132,7 @@ All folders are optional. Subfolders are allowed, except in `title/` and
 | `title/logo.png runes.png titlebox.png titlebutton.png` | Title screen sprites. | [Title screen](#title-screen) |
 | `binary/title.jpg` | Title screen background. | [Title screen](#title-screen) |
 | `spawns.json` | npcs, locs and objs placed when the server starts. | [spawns.json](#spawnsjson) |
+| `source/**` | Your own source files, for example Blender files or a script that makes a model. The build does not read this folder. | |
 
 Notes (`*.md`, `*.txt`, `LICENSE`, `CREDITS` and so on) can go anywhere.
 Files whose name starts with `.` are ignored everywhere. Any other file that
